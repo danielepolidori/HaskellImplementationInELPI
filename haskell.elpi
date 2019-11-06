@@ -1,0 +1,69 @@
+kind typ type.
+kind ter type.
+
+type app  ter -> ter -> ter.
+type lam  (ter -> ter) -> ter.
+
+type arr typ -> typ -> typ.
+
+type of ter -> typ -> prop.
+
+mode (of i o).
+of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
+of (app X Y) B :- of X (arr A B), of Y A.
+of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
+
+% TODO 1: haskell senza type classes
+%  - implementare tutti i costrutti Haskell
+%    usabili per definire funzioni
+%    es. pattern matching (case), e let-in
+%  - definire un programma Haskell come una lista
+%    di funzioni ovvero coppie nome-corpo
+%  - aggiungere il forall ai tipi
+%    es:  forall T \ list T -> list T -> list T
+%    ovvero: un tipo e' dato da una lista di
+%    forall (imbricati) terminati da un tipo
+%    fatto da sole arr
+%    es. forall K \ forall V \ arr (K (arr (hash K V) V))
+%    controesempio:  arr T (forall K \ K)
+%  - implementare il predicato of per i nuovi costrutti
+%  - la regola of per le funzioni deve inserire i
+%    forall per ogni meta-variabile rimasta tale nel
+%    corpo (ELPI only)
+
+% TODO 2: aggiunta delle type classes
+%  - meccanismo per dichiarare le type classes
+%    (meccanismo = predicato ELPI)
+%    typeclass (printable T) [print, arr T string]
+%  - meccanismo per dichiarare istanze di type classes
+%    (meccanismo = predicato ELPI)
+%      istanza (printable int) [print, lam x \ ...]
+%      istanza (printable (list T)) [print, lam l \ concat (map Print_elem l) ]
+%       :- istanza (printable T) [print, Print_elem].
+%  - quando of trova un metodo di una type class
+%    deve cercare un'istanza
+%  - la funzione di ricerca di un'istanza deve generare
+%    un constraint se il tipo e' una variabile
+%  - cambiare di nuovo la sintassi dei tipi per permettere
+%    di assumere type-class su variabili di tipo
+%    es. forall T \ printable T => list T -> string
+%    le => devono stare fra i forall e il tipo semplice
+%  - cambiare la regola of per le definizioni di funzione
+%    in modo che dopo aver tipato il corpo recuperi dall'insieme
+%    dei vincoli tutte le type-class richieste e le trasformi
+%    nelle premesse =>   (ELPI only)
+
+% TODO 3: estensioni delle type classes
+%  - implementare le estensioni sotto forma di regole
+%    ELPI per il predicato di istanze
+
+
+% primo esempio senza polimorfismo: riuscire a tipare
+% of 1 int.
+% of 2 int.
+% typeclass (printable T) [print, arr T int].
+% istanza (printable int) [print, lam x \ x].
+% istanza (printable (list T)) [print, lam l \ concat (map Print_elem l) ]
+%  :- istanza (printable T) [print, Print_elem].
+% prog = [f, lam x \ print (app (app plus 1) 2)]
+% prog = [f, lam x \ print [1,2,3]]
