@@ -13,6 +13,66 @@ of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
 of (app X Y) B :- of X (arr A B), of Y A.
 of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
+
+
+% primo esempio senza polimorfismo: riuscire a tipare
+% of 1 int.
+% of 2 int.
+% typeclass (printable T) [print, arr T int].
+% istanza (printable int) [print, lam x \ x].
+% istanza (printable (list T)) [print, lam l \ concat (map Print_elem l) ]
+%  :- istanza (printable T) [print, Print_elem].
+% prog = [f, lam x \ print (app (app plus 1) 2)]
+% prog = [f, lam x \ print [1,2,3]]
+
+
+% idea 1
+%of X int :- Integer(X).
+
+% idea 2
+%type of int -> prop.
+
+% idea 3
+%type of int -> type -> prop.
+
+% idea 4
+%constraint of {
+%   rule (of X int) <=> (1 is X); (2 is X); (3 is X); ... .
+%}
+
+
+type typeclass string -> typ -> string -> typ -> prop.
+%			   nome_classe -> tipo_classe -> nome funzione -> tipo_funzione
+
+type istanza string -> typ -> string -> ter.
+
+istanza "printable" T1 "print" (F T1) :- typeclass "printable" T2 "print" (arr T2 int), of (F T1) (arr T2 int).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 % TODO 1: haskell senza type classes
 %  - implementare tutti i costrutti Haskell
 %    usabili per definire funzioni
@@ -56,14 +116,3 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % TODO 3: estensioni delle type classes
 %  - implementare le estensioni sotto forma di regole
 %    ELPI per il predicato di istanze
-
-
-% primo esempio senza polimorfismo: riuscire a tipare
-% of 1 int.
-% of 2 int.
-% typeclass (printable T) [print, arr T int].
-% istanza (printable int) [print, lam x \ x].
-% istanza (printable (list T)) [print, lam l \ concat (map Print_elem l) ]
-%  :- istanza (printable T) [print, Print_elem].
-% prog = [f, lam x \ print (app (app plus 1) 2)]
-% prog = [f, lam x \ print [1,2,3]]
