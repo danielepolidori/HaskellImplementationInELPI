@@ -1,12 +1,12 @@
 kind typ type.
-kind ter type.
+kind term type.
 
-type app  ter -> ter -> ter.
-type lam  (ter -> ter) -> ter.
+type app  term -> term -> term.
+type lam  (term -> term) -> term.
 
 type arr typ -> typ -> typ.
 
-type of ter -> typ -> prop.
+type of term -> typ -> prop.
 
 mode (of i o).
 of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
@@ -48,11 +48,11 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 type typeclass string -> typ -> string -> typ -> prop.
 %			   nome_classe -> tipo_classe -> nome funzione -> tipo_funzione
 
-type istanza string -> typ -> string -> ter -> prop.
+type istanza string -> typ -> string -> term -> prop.
 
 typeclass S1 T S2 (arr T _).
 
-istanza S1 T S2 (F T) :- typeclass S1 TA S2 (arr TA TB), of (F T) (arr T TB).
+istanza S1 T S2 (lam F) :- typeclass S1 TA S2 (arr TA TB), of (lam F) (arr T TB).
 
 
 %test1 :-
@@ -93,6 +93,48 @@ istanza S1 T S2 (F T) :- typeclass S1 TA S2 (arr TA TB), of (F T) (arr T TB).
 %  - la regola of per le funzioni deve inserire i
 %    forall per ogni meta-variabile rimasta tale nel
 %    corpo (ELPI only)
+
+
+
+type fun_case term -> term.
+%			  (coppie input-return) -> input -> funzione definita con case
+
+type coppia_case term -> term -> term.
+%				 input -> return -> termine coppia_case
+
+of (fun_case (coppia_case A B)) (arr TA TB) :- of A TA, of B TB.
+
+B :- app (fun_case (coppia_case A B)) A.
+
+
+type fun_let term -> term.
+%			 (triple input-let-in) -> funzione definita con let
+
+type tripla_let term -> term -> term -> term.
+%				input -> let -> in -> termine tripla_let
+
+of (fun_let (tripla_let I (lam F) (lam G))) (arr TI TG) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).
+
+% Quale delle due è quella giusta?
+%G (F I) :- app (fun_let (tripla_let I (lam F) (lam G))) I.
+app (lam G) (app (lam F) I) :- app (fun_let (tripla_let I (lam F) (lam G))) I.
+
+
+
+type fun string -> term -> term.
+%		 nome funzione -> corpo funzione -> termine fun
+
+of (fun S (lam F)) (arr T1 T2) :- of (lam F) (arr T1 T2).
+
+lam F :- fun S (lam F).
+
+
+type prog term -> term.		% E' giusto che prog restituisca un term?
+%		  lista di funzioni -> ?
+
+app (prog [H|T]) I :- app H I.
+app (prog [H|T]) I :- app (prog T) I.
+% Manca il caso base? E' una ricorsione che non termina?
 
 
 
