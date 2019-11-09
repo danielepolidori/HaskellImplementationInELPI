@@ -15,6 +15,8 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 
 
+
+
 % primo esempio senza polimorfismo: riuscire a tipare
 % of 1 int.
 % of 2 int.
@@ -24,6 +26,7 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 %  :- istanza (printable T) [print, Print_elem].
 % prog = [f, lam x \ print (app (app plus 1) 2)]
 % prog = [f, lam x \ print [1,2,3]]
+
 
 
 % idea 1
@@ -41,20 +44,20 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 %}
 
 
+
 type typeclass string -> typ -> string -> typ -> prop.
 %			   nome_classe -> tipo_classe -> nome funzione -> tipo_funzione
 
-type istanza string -> typ -> string -> ter.
+type istanza string -> typ -> string -> ter -> prop.
 
-istanza "printable" T1 "print" (F T1) :- typeclass "printable" T2 "print" (arr T2 int), of (F T1) (arr T2 int).
+typeclass S1 T S2 (arr T _).
 
-
-
-
+istanza S1 T S2 (F T) :- typeclass S1 TA S2 (arr TA TB), of (F T) (arr T TB).
 
 
-
-
+%test1 :-
+% typeclass "printable" T "print" (arr T int),
+% istanza "printable" int "print" (lam x \ x).
 
 
 
@@ -90,6 +93,26 @@ istanza "printable" T1 "print" (F T1) :- typeclass "printable" T2 "print" (arr T
 %  - la regola of per le funzioni deve inserire i
 %    forall per ogni meta-variabile rimasta tale nel
 %    corpo (ELPI only)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % TODO 2: aggiunta delle type classes
 %  - meccanismo per dichiarare le type classes
