@@ -89,6 +89,8 @@ istanza S1 T S2 (lam F) :- typeclass S1 TA S2 (arr TA TB), of (lam F) (arr T TB)
 
 type step term -> term -> prop.
 
+step (app (lam F) X) (F X).
+
 
 
 % Funzione definita con il costrutto case
@@ -105,6 +107,9 @@ of (fun_case (coppia_case A B)) (arr TA TB) :- of A TA, of B TB.
 
 %B :- app (fun_case (coppia_case A B)) A.
 step (app (fun_case (coppia_case A B)) A) B.
+
+mode (of i o).
+of (uvar _ as X) (typ_arr (arr T1 T2)) :- !, declare_constraint (of X (typ_for (forall T1 (forall T2 _)) (arr T1 T2))) [X].		% Va esteso al caso generale
 
 
 % Funzione definita con il costrutto let-in
@@ -134,6 +139,7 @@ of (fun S (lam F)) (arr T1 T2) :- of (lam F) (arr T1 T2).
 
 %lam F :- fun S (lam F).
 step (fun S (lam F)) (lam F).
+step (app (fun S (lam F)) X) (app (lam F) X).
 
 
 
@@ -144,6 +150,7 @@ step (fun S (lam F)) (lam F).
 type prog (list term) -> term.		% ~ E' giusto che prog restituisca un term?
 %		  lista di funzioni -> ?
 
+% Tutte le funzioni del programma sono di tipo 'arr T1 T2'
 of (prog [H|T]) (arr T1 T2) :- of H (arr T1 T2), of (prog T) (arr T1 T2).
 of (prog [H|[]]) (arr T1 T2) :- of H (arr T1 T2).	% Caso base
 
@@ -155,30 +162,32 @@ of (prog [H|[]]) (arr T1 T2) :- of H (arr T1 T2).	% Caso base
 
 % Forall aggiunto ai tipi
 
+% ~ Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr) oppure soltanto uno fatto di forall+arr?
 
-% idea 1
+
+% idea 1 (forall e arr separati)
+% PROBLEMA: 
 
 kind schema type.
 kind tipo type.
+kind typ_single type.
 
-type forall typ_single -> schema -> schema.		% ~ Come si fa a scrivere l'ultimo 'forall'?
+type arr tipo -> tipo -> tipo.
 
-type typ_for schema -> tipo -> typ.		% e.g. typ_for (forall T1 (forall T2 (forall T3))) (arr T1 (arr T2 T3))
-type typ_base tipo -> typ.				% e.g. typ_base (arr T1 (arr T2 T3))
+type forall typ_single -> schema -> schema.		% ~ Come si fa a scrivere l'ultimo 'forall'? Con 'nil'?
+
+type typ_for schema -> tipo -> typ.		% e.g. typ_for (forall T1 (forall T2 (forall T3 _))) (arr T1 (arr T2 T3))
+type typ_arr tipo -> typ.				% e.g. typ_arr (arr T1 (arr T2 T3))
 
 
-% idea 2
+% idea 2 (forall e arr imbricati)
+% PROBLEMA: 'arr' potrebbe prendere al suo interno dei 'forall'
 
 % e.g. forall T1 (forall T2 (forall T3 (arr T1 (arr T2 T3))))
 
-kind scheme type.
+%kind scheme type.
 
-type forall scheme -> typ -> typ.
-
-
-
-
-
+%type forall scheme -> typ -> typ.
 
 
 
