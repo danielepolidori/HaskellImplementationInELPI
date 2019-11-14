@@ -31,14 +31,20 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 
 
+%%%
+
+
+
 % idea 1
 %of X int :- Integer(X).
 
 % idea 2
-%type of int -> prop.
+% e.g. (of1 7)
+%type of1 int -> prop.
 
 % idea 3
-%type of int -> type -> prop.
+% e.g. (of2 7 int)
+%type of2 int -> type -> prop.
 
 % idea 4
 %constraint of {
@@ -47,19 +53,68 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 
 
+%%%
+
+
+
+% idea 1
+
+
+% Tutti gli elementi della lista hanno quel tipo
+
+type of_list list term -> typ -> prop.
+
+of_list [H|T] X :- of H X, of_list T X.
+of_list [H|[]] X :- of H X.		% Caso base
+
+
+% Ogni funzionde della lista1 ha lo stesso nome e lo stesso tipo di una funzione contenuta nella lista2
+
+type match_fun list term -> list term -> prop.
+match_fun_list [H1|T1] [H2|T2] :- match_fun H1 H2, match_fun_list T1 T2.					% Confronta la prima coppia ...
+match_fun_list [H1|T1] [H2|T2] :- match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
+
+type match_fun term -> term -> prop.
+match_fun (fun_def S1 F) (fun_dic S1 T) :- of F T.
+
+
+kind classes type.
+
+type typeclass classes -> list term -> prop.
+
+type classe string -> typ_arr -> classes.
+
+typeclass (classe S T) L :- of_list L (typ_arr (arr T _)).
+% e.g. typeclass (classe "printable" T) [fun_dic "print" (typ_arr (arr T int)]
+
+
+type istanza classes -> list term -> prop.
+
+istanza (classe S T) L1 :- typeclass (classe S TA) L2, of_list L2 (typ_arr (arr TA TB)), of_list L1 (typ_arr (arr T TB)), match_fun L2 L1.		% ~ Va esteso al caso generale: un tipo generico e non soltanto (arr _ _)
+
+
+
+% idea 2
+
 type typeclass string -> typ -> string -> typ -> prop.
-%			   nome_classe -> tipo_classe -> nome funzione -> tipo_funzione
+%			   nome_classe -> tipo_classe -> nome_funzione -> tipo_funzione
 
 type istanza string -> typ -> string -> term -> prop.
+%			 nome_classe -> tipo_istanza -> nome_funzione -> corpo_funzione
 
 typeclass S1 T S2 (arr T _).
 
 istanza S1 T S2 (lam F) :- typeclass S1 TA S2 (arr TA TB), of (lam F) (arr T TB).	% Comprende anche il caso TB=TA ?
 
 
-%test1 :-
-% typeclass "printable" T "print" (arr T int),
-% istanza "printable" int "print" (lam x \ x).
+test1 :-
+ typeclass "printable" T "print" (arr T int),
+ istanza "printable" int "print" (lam x \ x).
+
+% ~ Non genera errore
+test1_err :-
+ typeclass "printable" T "print" (arr T int),
+ istanza "printable" int "abcde" (lam x \ x).
 
 
 
@@ -93,36 +148,42 @@ step (app (lam F) X) (F X).
 
 
 
-% Funzione definita con il costrutto case
+%%% Funzione definita con il costrutto case
 
-type fun_case term -> term.
+type fun_case list term -> term.
 %			  (coppie input-return) -> input -> funzione definita con case
 
 type coppia_case term -> term -> term.
 %				 input -> return -> termine coppia_case
 
-of (fun_case (coppia_case A B)) (arr TA TB) :- of A TA, of B TB.
+of (coppia_case A B) (typ_arr (arr TA TB)) :- of A TA, of B TB.		% ~ E' corretto attribuire a coppia_case il tipo 'arr'? O sarebbe meglio introdurre un nuovo tipo (es: 'coppia')?
+
+%of (fun_case (coppia_case A B)) (arr TA TB) :- of A TA, of B TB.	% ~ Va ampliato al caso generale con la lista di coppie
 % of (fun_case (coppia_case A1 B1) (coppia_case A2 B2) (coppia_case A3 B3) [...]) (arr TA TB)
 %  :- of A1 TA, of A2 TA, of A3 TA, [...], of B1 TB, of B2 TB, of B3 TB, [...].
+of (fun_case L) (typ_arr (arr TA TB)) :- of_list L (typ_arr (arr TA TB)).
 
 %B :- app (fun_case (coppia_case A B)) A.
 step (app (fun_case (coppia_case A B)) A) B.
 
 mode (of i o).
-of (uvar _ as X) (typ_arr (arr T1 T2)) :- !, declare_constraint (of X (typ_for (forall T1 (forall T2 _)) (arr T1 T2))) [X].		% Va esteso al caso generale
+of (uvar _ as X) (typ_arr (arr T1 T2)) :- !, declare_constraint (of X (typ_for (forall T1 (forall T2 _)) (arr T1 T2))) [X].		% ~ Va esteso al caso generale
 
 
-% Funzione definita con il costrutto let-in
+%%% Funzione definita con il costrutto let-in
 
-type fun_let term -> term.
+type fun_let list term -> term.
 %			 (triple input-let-in) -> funzione definita con let
 
 type tripla_let term -> term -> term -> term.
-%				input -> let -> in -> termine tripla_let
+%				input -> corpo_let -> corpo_in -> termine tripla_let
 
-of (fun_let (tripla_let I (lam F) (lam G))) (arr TI TG) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).
+of (tripla_let I (lam F) (lam G))) (arr TI (arr TF TG)) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).
+
+%of (fun_let (tripla_let I (lam F) (lam G))) (arr TI TG) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).		% ~ Va esteso al caso generale con una lista di triple
 % of (fun_let (tripla_let I1 (lam F1) (lam G1)) (tripla_let I2 (lam F2) (lam G2)) (tripla_let I3 (lam F3) (lam G3)) [...]) (arr TI TG)
 %  :- of I1 TI, of I2 TI, of I3 TI, [...], of (lam F1) (arr TI TF), of (lam F2) (arr TI TF), of (lam F3) (arr TI TF), [...], of (lam G1) (arr TF TG), of (lam G2) (arr TF TG), of (lam G3) (arr TF TG), [...].
+of (fun_let L) (arr TI TG) :- of_list L (arr TI (arr TF TG)).
 
 %app (lam G) (app (lam F) I) :- app (fun_let (tripla_let I (lam F) (lam G))) I.
 % G (F I) :- ...
@@ -130,20 +191,27 @@ step (app (fun_let (tripla_let I (lam F) (lam G))) I) (app (lam G) (app (lam F) 
 
 
 
-% Funzioni come coppie nome-corpo
+%%% Funzioni come coppie nome-corpo
 
-type fun string -> term -> term.
+
+type fun_def string -> term -> term.
 %		 nome funzione -> corpo funzione -> termine fun
 
-of (fun S (lam F)) (arr T1 T2) :- of (lam F) (arr T1 T2).
+of (fun_def S (lam F)) (arr T1 T2) :- of (lam F) (arr T1 T2).
 
-%lam F :- fun S (lam F).
-step (fun S (lam F)) (lam F).
-step (app (fun S (lam F)) X) (app (lam F) X).
+%lam F :- fun_def S (lam F).
+step (fun_def S (lam F)) (lam F).
+step (app (fun_def S (lam F)) X) (app (lam F) X).
+
+
+type fun_dic string -> typ -> term.
+%			 nome funzione -> tipo funzione -> termine.
+
+of (fun_dic S (arr T1 T2)) (arr T1 T2).
 
 
 
-% Programma Haskell come lista di funzioni
+%%% Programma Haskell come lista di funzioni
 
 % ~ Con 'programma Haskell' si intende questo seguente? O il file .elpi in generale?
 
@@ -160,13 +228,12 @@ of (prog [H|[]]) (arr T1 T2) :- of H (arr T1 T2).	% Caso base
 
 
 
-% Forall aggiunto ai tipi
+%%% Forall aggiunto ai tipi
 
 % ~ Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr) oppure soltanto uno fatto di forall+arr?
 
 
 % idea 1 (forall e arr separati)
-% PROBLEMA: 
 
 kind schema type.
 kind tipo type.
