@@ -26,18 +26,18 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % istanza printable int [print, lam x \ x].
 % istanza printable (list T) [print, lam l \ concat (map Print_elem l) ]
 %  :- istanza printable T [print, Print_elem].
-% of (app Fun Arg) Ty :-
-   istanza N L,
-   cerca_in_L L Fun Te T,
-   typeclass N TY Defs,
-   cerca_Fun_in_LTY Fun Defs Ty.
+% of (app Fun Arg) Ty :-			% Ty = "tipo"
+%   istanza N L,					% N = "nome", L = "lista"
+%   cerca_in_L L Fun Te T,			% Te = "termine"
+%   typeclass N TY Defs,
+%   cerca_Fun_in_LTY Fun Defs Ty.
 %% esempio:  of (app print 3) Z
 %% deve istanziare Z con int.
-% check_istanze :-
-   istanza N ARG DEF,
-   (typeclass N ARG DECL, simil_of_list DEF DECL ; exit 0)
-   fail.
-% check_istanze.
+% check_istanze :-		% Controlla che per ogni istanza del programma ci sia la corrispondente typeclass
+%   istanza N ARG DEF,											% N = "nome", ARG = "argomento", DEF = lista di definizioni
+%   (typeclass N ARG DECL, simil_of_list DEF DECL ; exit 0)		% DECL = lista di dichiarazioni
+%   fail.
+% check_istanze.	% Caso base
 % test Prog L :-
 %   simil_of_list per fare of su tutte le funzioni di L
 % test [f, lam x \ print (app (app plus 1) 2)].
@@ -74,19 +74,18 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % Tutti gli elementi della lista hanno quel tipo
 type of_list list term -> typ -> prop.
 of_list [H|T] X :- of H X, of_list T X.
-of_list [] X.		% Caso base
+of_list [] X.		% Caso base (la lista vuota ha qualsiasi tipo)
 
 
 % Ogni funzione della lista1 ha lo stesso nome e lo stesso tipo di una funzione contenuta nella lista2
-type match_fun list term -> list term -> prop.
+type match_fun_list list term -> list term -> prop.
 match_fun_list [] [].
 match_fun_list [H|T] L :-
- search H L LminusH,
+ search H L LminusH,		% LminusH = lista L senza l'elemento H
  match_fun_list T LminusH.
 
-match_fun_list [H1|T1] [H2|T2] :- match_fun H1 H2, match_fun_list T1 T2.					% Confronta la prima coppia e (se fa match) prosegue ...
-match_fun_list [H1|T1] [H2|T2] :-
-match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
+%match_fun_list [H1|T1] [H2|T2] :- match_fun H1 H2, match_fun_list T1 T2.					% Confronta la prima coppia e (se fa match) prosegue ...
+%match_fun_list [H1|T1] [H2|T2] :- match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
 
 type match_fun term -> term -> prop.
 match_fun (fun_def S1 F) (fun_dic S1 T) :- of F T.
@@ -108,13 +107,15 @@ istanza (classe S T) L1 :- typeclass (classe S TA) L2, of_list L2 (arr TA TB), o
 
 
 
+% Test
+
+typeclass (classe "printable" T) [fun_dic "print" (arr T int)].
+
 test1 :-
- typeclass (classe "printable" T) [fun_dic "print" (arr T int)],
  istanza (classe "printable" int) [fun_def "print" (lam x \ x)].
 
 % Dovrebbe generare errore
 test1_err :-
- typeclass (classe "printable" T) [fun_dic "print" (arr T int)],
  istanza (classe "printable" int) [fun_def "abcde" (lam x \ x)].
 
 
@@ -151,10 +152,12 @@ step (app (lam F) X) (F X).
 
 %%% Funzione definita con il costrutto case
 
-let f x =
- match x of
-    O => O
-  | S y => y + 2
+% Esempio in pseudocodice:
+%
+%  let f x =
+%   match x of
+%      O => O
+%    | S y => y + 2
 
 case x [branch "0" 0, branch "S" (lam y \ y + 2)])
 type case term -> list pair -> term.
@@ -266,18 +269,18 @@ type arr tipo -> tipo -> tipo.
 type for_all (tipo -> schema) -> schema.
 type base tipo -> schema.
 
-es.:   for_all X \ for_all Y \ base (arr X Y).
+% es.:   for_all X \ for_all Y \ base (arr X Y).
 
 kind declaration type.
 type fun_decl string -> schema -> declaration.
 type of term -> tipo -> o.
 
-es.
- Term =
-  let id = lam A \ A in     il termine A \ A ha tipo X -> X
-                            id viene dichiarato con schema for_all X \ X -> X
-   id 4                     ha tipo int
- tutto Term ha tipo int
+% es.
+%  Term =
+%   let id = lam A \ A in     % il termine A \ A ha tipo X -> X
+%                             % id viene dichiarato con schema for_all X \ X -> X
+%    id 4                     % ha tipo int
+%  tutto Term ha tipo int
 
 
 
