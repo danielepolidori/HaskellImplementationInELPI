@@ -22,12 +22,26 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % primo esempio senza polimorfismo: riuscire a tipare
 % of 1 int.
 % of 2 int.
-% typeclass (printable T) [print, arr T int].
-% istanza (printable int) [print, lam x \ x].
-% istanza (printable (list T)) [print, lam l \ concat (map Print_elem l) ]
-%  :- istanza (printable T) [print, Print_elem].
-% prog = [f, lam x \ print (app (app plus 1) 2)]
-% prog = [f, lam x \ print [1,2,3]]
+% typeclass printable T [print, arr T int].
+% istanza printable int [print, lam x \ x].
+% istanza printable (list T) [print, lam l \ concat (map Print_elem l) ]
+%  :- istanza printable T [print, Print_elem].
+% of (app Fun Arg) Ty :-
+   istanza N L,
+   cerca_in_L L Fun Te T,
+   typeclass N TY Defs,
+   cerca_Fun_in_LTY Fun Defs Ty.
+%% esempio:  of (app print 3) Z
+%% deve istanziare Z con int.
+% check_istanze :-
+   istanza N ARG DEF,
+   (typeclass N ARG DECL, simil_of_list DEF DECL ; exit 0)
+   fail.
+% check_istanze.
+% test Prog L :-
+%   simil_of_list per fare of su tutte le funzioni di L
+% test [f, lam x \ print (app (app plus 1) 2)].
+% test [f, lam x \ print [1,2,3]].
 
 
 
@@ -60,13 +74,19 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % Tutti gli elementi della lista hanno quel tipo
 type of_list list term -> typ -> prop.
 of_list [H|T] X :- of H X, of_list T X.
-of_list [H|[]] X :- of H X.		% Caso base
+of_list [] X.		% Caso base
 
 
 % Ogni funzione della lista1 ha lo stesso nome e lo stesso tipo di una funzione contenuta nella lista2
 type match_fun list term -> list term -> prop.
+match_fun_list [] [].
+match_fun_list [H|T] L :-
+ search H L LminusH,
+ match_fun_list T LminusH.
+
 match_fun_list [H1|T1] [H2|T2] :- match_fun H1 H2, match_fun_list T1 T2.					% Confronta la prima coppia e (se fa match) prosegue ...
-match_fun_list [H1|T1] [H2|T2] :- match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
+match_fun_list [H1|T1] [H2|T2] :-
+match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
 
 type match_fun term -> term -> prop.
 match_fun (fun_def S1 F) (fun_dic S1 T) :- of F T.
@@ -131,6 +151,15 @@ step (app (lam F) X) (F X).
 
 %%% Funzione definita con il costrutto case
 
+let f x =
+ match x of
+    O => O
+  | S y => y + 2
+
+case x [branch "0" 0, branch "S" (lam y \ y + 2)])
+type case term -> list pair -> term.
+kind pair type.
+type branch string -> term -> pair.
 
 type fun_case list term -> term.
 %			  (coppie input-return) -> input -> funzione definita con case
@@ -231,6 +260,28 @@ of (prog L) (arr T1 T2) :- of_list L (arr T1 T2).
 
 kind schema type.
 kind tipo type.
+
+type arr tipo -> tipo -> tipo.
+
+type for_all (tipo -> schema) -> schema.
+type base tipo -> schema.
+
+es.:   for_all X \ for_all Y \ base (arr X Y).
+
+kind declaration type.
+type fun_decl string -> schema -> declaration.
+type of term -> tipo -> o.
+
+es.
+ Term =
+  let id = lam A \ A in     il termine A \ A ha tipo X -> X
+                            id viene dichiarato con schema for_all X \ X -> X
+   id 4                     ha tipo int
+ tutto Term ha tipo int
+
+
+
+
 kind typ_single type.
 
 type arr tipo -> tipo -> tipo.
