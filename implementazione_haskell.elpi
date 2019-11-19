@@ -1,12 +1,12 @@
-kind typ type.
+kind tipo type.
 kind term type.
 
 type app  term -> term -> term.
 type lam  (term -> term) -> term.
 
-type arr typ -> typ -> typ.
+type arr tipo -> tipo -> tipo.
 
-type of term -> typ -> prop.
+type of term -> tipo -> prop.
 
 mode (of i o).
 of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
@@ -44,26 +44,17 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % test [f, lam x \ print [1,2,3]].
 
 
+of 1 int.	% ~ TESTARE
+of 2 int.
 
-%%%
+typeclass printable T [print, arr T int].
 
+istanza printable int [print, lam x \ x].
+istanza printable (list T) [print, lam l \ concat (map Print_elem l) ]
+ :- istanza printable T [print, Print_elem].
 
-
-% idea 1
-%of X int :- Integer(X).
-
-% idea 2
-% e.g. (of1 7)
-%type of1 int -> prop.
-
-% idea 3
-% e.g. (of2 7 int)
-%type of2 int -> type -> prop.
-
-% idea 4
-%constraint of {
-%   rule (of X int) <=> (1 is X); (2 is X); (3 is X); ... .
-%}
+test [f, lam x \ print (app (app plus 1) 2)].
+test [f, lam x \ print [1,2,3]].
 
 
 
@@ -141,12 +132,6 @@ test1_err :-
 %  - la regola of per le funzioni deve inserire i
 %    forall per ogni meta-variabile rimasta tale nel
 %    corpo (ELPI only)
-
-
-
-type step term -> term -> prop.
-
-step (app (lam F) X) (F X).
 
 
 
@@ -256,15 +241,13 @@ of (prog L) (arr T1 T2) :- of_list L (arr T1 T2).
 
 %%% Forall aggiunto ai tipi
 
-% ~ Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr) oppure soltanto uno fatto di forall+arr?
+% Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr)
+%
+%   es_forall+arr:      for_all T \ base (arr T T)
+%   es_arr:             arr T1 T2
 
-
-% idea 1 (forall e arr separati)
 
 kind schema type.
-kind tipo type.
-
-type arr tipo -> tipo -> tipo.
 
 type for_all (tipo -> schema) -> schema.
 type base tipo -> schema.
@@ -273,7 +256,6 @@ type base tipo -> schema.
 
 kind declaration type.
 type fun_decl string -> schema -> declaration.
-type of term -> tipo -> o.
 
 % es.
 %  Term =
@@ -285,25 +267,11 @@ type of term -> tipo -> o.
 
 
 
-kind typ_single type.
-
-type arr tipo -> tipo -> tipo.
-
-type forall typ_single -> schema -> schema.		% ~ Come si fa a scrivere l'ultimo 'forall'? Con 'nil'?
-
-type typ_for schema -> tipo -> typ.		% e.g. typ_for (forall T1 (forall T2 (forall T3 _))) (arr T1 (arr T2 T3))
-type typ_arr tipo -> typ.				% e.g. typ_arr (arr T1 (arr T2 T3))
-type typ_sing type -> typ.				% e.g. typ_sing T1
 
 
-% idea 2 (forall e arr imbricati)
-% PROBLEMA: 'arr' potrebbe prendere al suo interno dei 'forall'
 
-% e.g. forall T1 (forall T2 (forall T3 (arr T1 (arr T2 T3))))
 
-%kind scheme type.
 
-%type forall scheme -> typ -> typ.
 
 
 
