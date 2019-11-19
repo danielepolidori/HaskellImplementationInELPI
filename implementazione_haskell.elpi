@@ -135,6 +135,8 @@ test1_err :-
 
 
 
+
+
 %%% Funzione definita con il costrutto case
 
 % Esempio in pseudocodice:
@@ -144,82 +146,84 @@ test1_err :-
 %      O => O
 %    | S y => y + 2
 
-case x [branch "0" 0, branch "S" (lam y \ y + 2)])
-type case term -> list pair -> term.
+
 kind pair type.
+
+type case_of term -> list pair -> term.
+
 type branch string -> term -> pair.
 
-type fun_case list term -> term.
-%			  (coppie input-return) -> input -> funzione definita con case
-
-type coppia_case term -> term -> term.
-%				 input -> return -> termine coppia_case
+% es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
 
 
-of (coppia_case A B) (typ_arr (arr TA TB)) :- of A TA, of B TB.		% ~ E' corretto attribuire a coppia_case il tipo 'arr'? O sarebbe meglio introdurre un nuovo tipo (es: 'coppia')?
-
-of (fun_case L) (typ_arr (arr TA TB)) :- of_list L (typ_arr (arr TA TB)).
-% Caso base:
-%  of (fun_case (coppia_case A B)) (arr TA TB) :- of A TA, of B TB.
-% Caso generale:
-%  of (fun_case (coppia_case A1 B1) (coppia_case A2 B2) (coppia_case A3 B3) [...]) (arr TA TB)
-%   :- of A1 TA, of A2 TA, of A3 TA, [...], of B1 TB, of B2 TB, of B3 TB, [...].
+of (case_of X L) T :- check_out_list L T.
 
 
-%B :- app (fun_case (coppia_case A B)) A.
-step (app (fun_case (coppia_case A B)) A) B.
+type check_out_list list pair -> tipo -> prop.
+
+check_out_list [branch S R | T] X :- of R X, check_out_list T X.
+check_out_list [] X.	% Caso base
 
 
-mode (of i o).
-of (uvar _ as X) (typ_arr (arr T1 T2)) :- !, declare_constraint (of X (typ_for (forall T1 (forall T2 _)) (arr T1 T2))) [X].		% ~ Va esteso al caso generale
 
 
 
 %%% Funzione definita con il costrutto let-in
+% ~ DA RICONTROLLARE, non mi convince l'uso delle funzioni negli esempi
+
+% es:
+%       let
+%           id = lam A \ A
+%       in
+%           id 4
 
 
-type fun_let list term -> term.
-%			 (triple input-let-in) -> funzione definita con let
+kind assignment type.
 
-type tripla_let term -> term -> term -> term.
-%				input -> corpo_let -> corpo_in -> termine tripla_let
+type let_in list assignment -> term -> term.
 
+type assegnamento string -> term -> assignment.
 
-of (tripla_let I (lam F) (lam G))) (arr TI (arr TF TG)) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).
+% es:   let_in [assegnamento "x" 1, assegnamento "y" 2, assegnamento "z" 3] (x + y + z)
+%              [x = 1, y = 2, z = 3] (x + y + z)
+%              lam x \ lam y \ lam z \ x + y + z
 
-of (fun_let L) (arr TI TG) :- of_list L (arr TI (arr TF TG)).
-% Caso base:
-%  of (fun_let (tripla_let I (lam F) (lam G))) (arr TI TG) :- of I TI, of (lam F) (arr TI TF), of (lam G) (arr TF TG).		% ~ Va esteso al caso generale con una lista di triple
-% Caso generale:
-%  of (fun_let (tripla_let I1 (lam F1) (lam G1)) (tripla_let I2 (lam F2) (lam G2)) (tripla_let I3 (lam F3) (lam G3)) [...]) (arr TI TG)
-%   :- of I1 TI, of I2 TI, of I3 TI, [...], of (lam F1) (arr TI TF), of (lam F2) (arr TI TF), of (lam F3) (arr TI TF), [...], of (lam G1) (arr TF TG), of (lam G2) (arr TF TG), of (lam G3) (arr TF TG), [...].
+% es:   let_in [assegnamento "id" (lam A \ A)] (app id 4)
+%              [id = (lam A \ A)] (id 4)
 
 
-%app (lam G) (app (lam F) I) :- app (fun_let (tripla_let I (lam F) (lam G))) I.
-step (app (fun_let (tripla_let I (lam F) (lam G))) I) (app (lam G) (app (lam F) I)).
-% app (lam G) (app (lam F) I) ...corrisponde a... G (F I)
+of (let_in L EXPR) T :- of EXPR T.
+
+
 
 
 
 %%% Funzioni come coppie nome-corpo
 
-% ~ Come corpo dovrebbe prendere 'fun_case' e 'fun_let' (invece di 'lam F')?
+
+type fun_impl string -> term -> term.
+%             nome funzione -> corpo funzione -> _ .
+
+% es:   fun_impl "foo1" (lam x \ lam y \ x + y)
+%       fun_impl "foo2" (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl "foo3" (let_in ... )
+
+of (fun_impl S (lam F)) T :- of (lam F) T.
 
 
-type fun_def string -> term -> term.
-%		 nome funzione -> corpo funzione -> termine fun
+kind declaration type.
 
-of (fun_def S (lam F)) (arr T1 T2) :- of (lam F) (arr T1 T2).
+type fun_decl string -> schema -> declaration.
+%             nome funzione -> tipo funzione -> _ .
 
-%lam F :- fun_def S (lam F).
-step (fun_def S (lam F)) (lam F).
-step (app (fun_def S (lam F)) X) (app (lam F) X).
+% es.
+%  Term =
+%   let id = lam A \ A in     % il termine A \ A ha tipo X -> X
+%                             % id viene dichiarato con schema for_all X \ X -> X
+%    id 4                     % ha tipo int
+%  tutto Term ha tipo int
 
 
-type fun_dic string -> typ -> term.
-%			 nome funzione -> tipo funzione -> termine.
-
-of (fun_dic S (arr T1 T2)) (arr T1 T2).
 
 
 
@@ -254,15 +258,7 @@ type base tipo -> schema.
 
 % es.:   for_all X \ for_all Y \ base (arr X Y).
 
-kind declaration type.
-type fun_decl string -> schema -> declaration.
 
-% es.
-%  Term =
-%   let id = lam A \ A in     % il termine A \ A ha tipo X -> X
-%                             % id viene dichiarato con schema for_all X \ X -> X
-%    id 4                     % ha tipo int
-%  tutto Term ha tipo int
 
 
 
