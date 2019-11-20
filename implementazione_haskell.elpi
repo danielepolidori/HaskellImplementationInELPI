@@ -51,13 +51,13 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 % Usando la mia sintassi:
 
-%of 1 int.
-%of 2 int.
+of 1 int.
+of 2 int.
 
 typeclass printable T [fun_decl print_ (for_all T \ base (arr T int))].
 
 istanza printable int [fun_impl print_ (lam x \ x)].
-istanza printable (list T) [fun_impl print_ (lam l \ concat (map Print_elem l))]
+istanza printable (list T) [fun_impl print_ (lam l \ app concat (app map Print_elem l))]
  :- istanza printable T [fun_impl print_ Print_elem].
 
 test [f, lam x \ app (fun print_) (app (app plus 1) 2)].
@@ -136,20 +136,19 @@ type branch string -> term -> pair.
 % es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
 
 
-of (case_of X L) T :- check_out_list L T.
+of (case_of X L) T :- check_output_list L T.
 
 
-type check_out_list list pair -> tipo -> prop.
+type check_output_list list pair -> tipo -> prop.
 
-check_out_list [branch S R | T] X :- of R X, check_out_list T X.
-check_out_list [] X.	% Caso base
+check_output_list [branch S R | T] X :- of R X, check_output_list T X.
+check_output_list [] X.	% Caso base
 
 
 
 
 
 %%% Funzione definita con il costrutto let-in
-% ~ Non mi convince l'uso delle funzioni negli esempi
 
 % es:
 %       let
@@ -166,11 +165,11 @@ type let_in list decl -> term -> term.
 
 type coppia_decl nome -> term -> decl.
 
-% es:   let_in [coppia_decl "x" 1, coppia_decl "y" 2, coppia_decl "z" 3] (x + y + z)
+% es:   let_in [coppia_decl x 1, coppia_decl y 2, coppia_decl z 3] (x + y + z)
 %              [x = 1, y = 2, z = 3] (x + y + z)
 %              lam x \ lam y \ lam z \ x + y + z
 
-% es:   let_in [coppia_decl "id" (lam A \ A)] (id 4)
+% es:   let_in [coppia_decl id (lam A \ A)] (id 4)
 %              [id = (lam A \ A)] (id 4)
 
 
@@ -194,8 +193,10 @@ kind nome_fun type.
 
 kind declaration type.
 
-type fun_decl nome_fun -> schema -> declaration.
+type fun_decl nome_fun -> schema -> declaration.		% ~ Non dovrebbe essere 'prop'?
 %             nome funzione -> tipo funzione -> _ .
+
+% es:   fun_decl foo (for_all T \ base (arr T T))
 
 % es.
 %  Term =
@@ -207,17 +208,21 @@ type fun_decl nome_fun -> schema -> declaration.
 
 kind implementation type.
 
-type fun_impl nome_fun -> term -> implementation.
+type fun_impl nome_fun -> term -> implementation.		% ~ Non dovrebbe essere 'prop'?
 %             nome funzione -> corpo funzione -> _ .
 
-% es:   fun_impl "foo1" (lam x \ lam y \ x + y)
-%       fun_impl "foo2" (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
-%       fun_impl "foo3" (let_in ... )
+% es:   fun_impl foo1 (lam x \ lam y \ x + y)
+%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
 
 
 type fun nome_fun -> term.
 
-of (fun N) T :- fun_impl N C, of C T.
+%of (fun N) T :- fun_impl N C, of C T.		% ~ Non va bene se fun_impl non è 'prop'
+
+% es:   app (fun print) 4
+%       =
+%       print 4
 
 
 
