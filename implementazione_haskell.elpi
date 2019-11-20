@@ -15,7 +15,11 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 
 
@@ -44,17 +48,22 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 % test [f, lam x \ print [1,2,3]].
 
 
-of 1 int.	% ~ TESTARE
-of 2 int.
 
-typeclass printable T [print, arr T int].
+% Usando la mia sintassi:
 
-istanza printable int [print, lam x \ x].
-istanza printable (list T) [print, lam l \ concat (map Print_elem l) ]
- :- istanza printable T [print, Print_elem].
+%of 1 int.
+%of 2 int.
 
-test [f, lam x \ print (app (app plus 1) 2)].
-test [f, lam x \ print [1,2,3]].
+typeclass printable T [fun_decl print_ (for_all T \ base (arr T int))].
+
+istanza printable int [fun_impl print_ (lam x \ x)].
+istanza printable (list T) [fun_impl print_ (lam l \ concat (map Print_elem l))]
+ :- istanza printable T [fun_impl print_ Print_elem].
+
+test [f, lam x \ app (fun print_) (app (app plus 1) 2)].
+test [f, lam x \ app (fun print_) [1,2,3]].
+
+
 
 
 
@@ -62,56 +71,27 @@ test [f, lam x \ print [1,2,3]].
 
 
 
-% Tutti gli elementi della lista hanno quel tipo
-type of_list list term -> typ -> prop.
-of_list [H|T] X :- of H X, of_list T X.
-of_list [] X.		% Caso base (la lista vuota ha qualsiasi tipo)
 
 
-% Ogni funzione della lista1 ha lo stesso nome e lo stesso tipo di una funzione contenuta nella lista2
-type match_fun_list list term -> list term -> prop.
-match_fun_list [] [].
-match_fun_list [H|T] L :-
- search H L LminusH,		% LminusH = lista L senza l'elemento H
- match_fun_list T LminusH.
-
-%match_fun_list [H1|T1] [H2|T2] :- match_fun H1 H2, match_fun_list T1 T2.					% Confronta la prima coppia e (se fa match) prosegue ...
-%match_fun_list [H1|T1] [H2|T2] :- match_fun_list [H1|T1] T2, match_fun_list T1 [H2|T2].		% ... altrimenti scorre la lista2 alla ricerca della funzione che faccia match (e T2 la controlla ripartendo dall'inizio della lista2)
-
-type match_fun term -> term -> prop.
-match_fun (fun_def S1 F) (fun_dic S1 T) :- of F T.
+kind nome_classe type.
 
 
-kind classes type.
+type typeclass nome_classe -> tipo -> list declaration -> prop.		% ~ E' giusto che sia una 'prop'?
 
-type typeclass classes -> list term -> prop.
-
-type classe string -> typ -> classes.
-
-typeclass (classe S T) L :- of_list L (typ_arr (arr T _)).
-% e.g. typeclass (classe "printable" T) [fun_dic "print" (typ_arr (arr T int)]
+typeclass N T L.
 
 
-type istanza classes -> list term -> prop.
+type istanza nome_classe -> tipo -> list implementation -> prop.	% ~ E' giusto che sia una 'prop'?
 
-istanza (classe S T) L1 :- typeclass (classe S TA) L2, of_list L2 (arr TA TB), of_list L1 (arr T TB), match_fun L2 L1.		% ~ Va esteso al caso generale: un tipo generico e non soltanto (arr _ _)
+istanza N T L.
 
 
-
-% Test
-
-typeclass (classe "printable" T) [fun_dic "print" (arr T int)].
-
-test1 :-
- istanza (classe "printable" int) [fun_def "print" (lam x \ x)].
-
-% Dovrebbe generare errore
-test1_err :-
- istanza (classe "printable" int) [fun_def "abcde" (lam x \ x)].
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 
 
@@ -169,7 +149,7 @@ check_out_list [] X.	% Caso base
 
 
 %%% Funzione definita con il costrutto let-in
-% ~ DA RICONTROLLARE, non mi convince l'uso delle funzioni negli esempi
+% ~ Non mi convince l'uso delle funzioni negli esempi
 
 % es:
 %       let
@@ -178,17 +158,19 @@ check_out_list [] X.	% Caso base
 %           id 4
 
 
-kind assignment type.
+kind decl type.
+kind nome type.
 
-type let_in list assignment -> term -> term.
 
-type assegnamento string -> term -> assignment.
+type let_in list decl -> term -> term.
 
-% es:   let_in [assegnamento "x" 1, assegnamento "y" 2, assegnamento "z" 3] (x + y + z)
+type coppia_decl nome -> term -> decl.
+
+% es:   let_in [coppia_decl "x" 1, coppia_decl "y" 2, coppia_decl "z" 3] (x + y + z)
 %              [x = 1, y = 2, z = 3] (x + y + z)
 %              lam x \ lam y \ lam z \ x + y + z
 
-% es:   let_in [assegnamento "id" (lam A \ A)] (app id 4)
+% es:   let_in [coppia_decl "id" (lam A \ A)] (id 4)
 %              [id = (lam A \ A)] (id 4)
 
 
@@ -200,20 +182,19 @@ of (let_in L EXPR) T :- of EXPR T.
 
 %%% Funzioni come coppie nome-corpo
 
+% Tre casi d'uso:
+%
+%   - Dichiarazione      es: fun_decl print (for_all T \ base (arr T int))
+%   - Implementazione    es: fun_impl print (lam x \ x)
+%   - Uso                es: print 4
 
-type fun_impl string -> term -> term.
-%             nome funzione -> corpo funzione -> _ .
 
-% es:   fun_impl "foo1" (lam x \ lam y \ x + y)
-%       fun_impl "foo2" (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
-%       fun_impl "foo3" (let_in ... )
-
-of (fun_impl S (lam F)) T :- of (lam F) T.
+kind nome_fun type.
 
 
 kind declaration type.
 
-type fun_decl string -> schema -> declaration.
+type fun_decl nome_fun -> schema -> declaration.
 %             nome funzione -> tipo funzione -> _ .
 
 % es.
@@ -224,22 +205,21 @@ type fun_decl string -> schema -> declaration.
 %  tutto Term ha tipo int
 
 
+kind implementation type.
+
+type fun_impl nome_fun -> term -> implementation.
+%             nome funzione -> corpo funzione -> _ .
+
+% es:   fun_impl "foo1" (lam x \ lam y \ x + y)
+%       fun_impl "foo2" (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl "foo3" (let_in ... )
 
 
+type fun nome_fun -> term.
 
-%%% Programma Haskell come lista di funzioni
+of (fun N) T :- fun_impl N C, of C T.
 
-% ~ Con 'programma Haskell' si intende questo seguente? O il file .elpi in generale?
 
-type prog list term -> term.		% ~ E' giusto che prog restituisca un term?
-%		  lista di funzioni -> ?
-
-% Tutte le funzioni del programma sono di tipo 'arr T1 T2'
-of (prog L) (arr T1 T2) :- of_list L (arr T1 T2).
-
-%app (prog [H|T]) I :- app H I.
-%app (prog [H|T]) I :- app (prog T) I.
-%app (prog [H|[]]) I :- app H I.		% Caso base
 
 
 
@@ -247,7 +227,7 @@ of (prog L) (arr T1 T2) :- of_list L (arr T1 T2).
 
 % Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr)
 %
-%   es_forall+arr:      for_all T \ base (arr T T)
+%   es_forall+arr:      for_all T1 \ for_all T2 \ base (arr T1 T2)
 %   es_arr:             arr T1 T2
 
 
