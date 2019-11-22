@@ -1,3 +1,36 @@
+%%%% TODO NEXT A
+%
+% implementare il caso of (fun F) che cerchi un'istanza di F in una type-class
+%    1) cerchi la type-class che dichiara la funzione F
+%    2) cerchi l'istanza che ti serve creando un constraint se il tipo
+%       è una variabile
+%% esempio1:  of (app (fun print_) (num 3))) Z
+%%            output: Z = string
+%% esempio2:  of (lam x \ app (fun print_) x)) Z
+%%            output: Z = X -> string
+%%            con un constraint  (istanza printable X L)
+
+%%%% TODO NEXT B
+%% estendere la sintassi degli schemi con le istanze di type class
+%%    ora:   for_all t \ base (t -> string)
+%%    dopo:   for_all t \ implies (is_instance printable t) (base (t -> string))
+%%
+%% estendere il predicato instantiate in modo che cerchi le istanze
+
+%%%% TODO NEXT 3
+%% implementare il let-in / implementare controllo di corrispondeza
+%% fra fun_decl e fun_impl
+%% recuperando i vincoli
+
+%%%% TODO ORTHOGONAL
+%%  data una istanza, verificare se è ben definita rispetto alla sua typeclass
+%%  esempio:  check (istanza printable int [fun_impl print_ (fun print_int)])
+%%  esempio hard (ne riparliamo): come controllare una istanza condizionale come questa
+%%    istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app (fun map) Print_elem) l))]
+%%    :- istanza printable T [fun_impl print_ Print_elem].
+
+%%% Simply typed lambda calculus
+
 kind tipo type.
 kind term type.
 
@@ -13,6 +46,78 @@ of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
 of (app X Y) B :- of X (arr A B), of Y A.
 of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
+%%% Forall aggiunto ai tipi e dichiarazioni
+
+% Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr)
+%
+%   es_forall+arr:      for_all T1 \ for_all T2 \ base (arr T1 T2)
+%   es_arr:             arr T1 T2
+
+kind schema type.
+
+type for_all (tipo -> schema) -> schema.
+type base tipo -> schema.
+
+% es.:   for_all X \ for_all Y \ base (arr X Y).
+
+kind nome_fun type.
+kind declaration type.
+type fun_decl nome_fun -> schema -> declaration.
+type assume declaration -> prop.
+
+type fun nome_fun -> term.
+of (fun N) T :- assume (fun_decl N C), instantiate C T.
+
+type instantiate schema -> tipo -> prop.
+instantiate (base T) T.
+instantiate (for_all t \ S t) O :- instantiate (S T_) O.
+
+% es:   app (fun print) 4
+%       =
+%       print 4
+
+%%% Funzioni come coppie nome-corpo
+
+% Tre casi d'uso:
+%
+%   - Dichiarazione      es: fun_decl print (for_all T \ base (arr T int))
+%   - Implementazione    es: fun_impl print (lam x \ x)
+%   - Uso                es: print 4	% oppure 'app (fun print) 4'?
+
+
+
+
+
+type fun_decl nome_fun -> schema -> declaration.		% ~ Non dovrebbe essere 'prop'?
+%             nome funzione -> tipo funzione -> _ .
+
+% es:   fun_decl foo (for_all T \ base (arr T T))
+
+% es.
+%  Term =
+%   let id = lam A \ A in     % il termine A \ A ha tipo X -> X
+%                             % id viene dichiarato con schema for_all X \ X -> X
+%    id 4                     % ha tipo int
+%  tutto Term ha tipo int
+
+
+kind implementation type.
+
+type fun_impl nome_fun -> term -> implementation.		% ~ Non dovrebbe essere 'prop'?
+%             nome funzione -> corpo funzione -> _ .
+
+% es:   fun_impl foo1 (lam x \ lam y \ x + y)
+%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
+
+
+
+
+%%% Typeclasses
+
+kind nome_classe type.
+type typeclass nome_classe -> tipo -> list declaration -> prop.
+type istanza nome_classe -> tipo -> list implementation -> prop.
 
 
 
@@ -51,49 +156,41 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 % Usando la mia sintassi:
 
-of 1 int.
-of 2 int.
+type string tipo.
+type int tipo.
+type list tipo -> tipo.
 
-typeclass printable T [fun_decl print_ (for_all T \ base (arr T int))].
+type num int -> term.
 
-istanza printable int [fun_impl print_ (lam x \ x)].
-istanza printable (list T) [fun_impl print_ (lam l \ app concat (app map Print_elem l))]
+of (num _N) int.
+
+type print_int nome_fun.
+type map nome_fun.
+type concat nome_fun.
+
+assume (fun_decl print_int (base (arr int string))).
+assume (fun_decl map (for_all s \ for_all t \ base (arr (arr s t) (arr (list s) (list t))))).
+assume (fun_decl concat (base (arr (list string) string))).
+
+%% Test sui for_all
+type test int -> tipo -> prop.
+test 1 OUT :-
+ of (lam l \ app (fun concat) (app (app (fun map) (fun print_int)) l)) OUT.
+
+type printable nome_classe.
+type print_ nome_fun.
+
+typeclass printable T [fun_decl print_ (base (arr T string))].
+
+istanza printable int [fun_impl print_ (fun print_int)].
+istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app (fun map) Print_elem) l))]
  :- istanza printable T [fun_impl print_ Print_elem].
 
-test [f, lam x \ app (fun print_) (app (app plus 1) 2)].
-test [f, lam x \ app (fun print_) [1,2,3]].
-
-
-
-
-
-%%%
-
-
-
-
-
-kind nome_classe type.
-
-
-type typeclass nome_classe -> tipo -> list declaration -> prop.		% ~ E' giusto che sia una 'prop'?
-
-typeclass N T L.
-
-
-type istanza nome_classe -> tipo -> list implementation -> prop.	% ~ E' giusto che sia una 'prop'?
-
-istanza N T L.
-
-
-
+%test [f, lam x \ app (fun print_) (app (app plus 1) 2)].
+%test [f, lam x \ app (fun print_) [1,2,3]].
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
 
 % TODO 1: haskell senza type classes
 %  - implementare tutti i costrutti Haskell
@@ -136,13 +233,13 @@ type branch string -> term -> pair.
 % es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
 
 
-of (case_of X L) T :- check_output_list L T.
+of (case_of _X L) T :- check_output_list L T.
 
 
 type check_output_list list pair -> tipo -> prop.
 
-check_output_list [branch S R | T] X :- of R X, check_output_list T X.
-check_output_list [] X.	% Caso base
+check_output_list [branch _S R | T] X :- of R X, check_output_list T X.
+check_output_list [] _X.	% Caso base
 
 
 
@@ -173,75 +270,17 @@ type coppia_decl nome -> term -> decl.
 %              [id = (lam A \ A)] (id 4)
 
 
-of (let_in L EXPR) T :- of EXPR T.
+of (let_in _L EXPR) T :- of EXPR T.
 
 
 
 
 
-%%% Funzioni come coppie nome-corpo
-
-% Tre casi d'uso:
-%
-%   - Dichiarazione      es: fun_decl print (for_all T \ base (arr T int))
-%   - Implementazione    es: fun_impl print (lam x \ x)
-%   - Uso                es: print 4
-
-
-kind nome_fun type.
-
-
-kind declaration type.
-
-type fun_decl nome_fun -> schema -> declaration.		% ~ Non dovrebbe essere 'prop'?
-%             nome funzione -> tipo funzione -> _ .
-
-% es:   fun_decl foo (for_all T \ base (arr T T))
-
-% es.
-%  Term =
-%   let id = lam A \ A in     % il termine A \ A ha tipo X -> X
-%                             % id viene dichiarato con schema for_all X \ X -> X
-%    id 4                     % ha tipo int
-%  tutto Term ha tipo int
-
-
-kind implementation type.
-
-type fun_impl nome_fun -> term -> implementation.		% ~ Non dovrebbe essere 'prop'?
-%             nome funzione -> corpo funzione -> _ .
-
-% es:   fun_impl foo1 (lam x \ lam y \ x + y)
-%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
-%       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
-
-
-type fun nome_fun -> term.
-
-%of (fun N) T :- fun_impl N C, of C T.		% ~ Non va bene se fun_impl non è 'prop'
-
-% es:   app (fun print) 4
-%       =
-%       print 4
 
 
 
 
 
-%%% Forall aggiunto ai tipi
-
-% Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr)
-%
-%   es_forall+arr:      for_all T1 \ for_all T2 \ base (arr T1 T2)
-%   es_arr:             arr T1 T2
-
-
-kind schema type.
-
-type for_all (tipo -> schema) -> schema.
-type base tipo -> schema.
-
-% es.:   for_all X \ for_all Y \ base (arr X Y).
 
 
 
