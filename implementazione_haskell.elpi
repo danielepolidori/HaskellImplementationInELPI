@@ -1,34 +1,3 @@
-%%%% TODO NEXT A
-%
-% implementare il caso of (fun F) che cerchi un'istanza di F in una type-class
-%    1) cerchi la type-class che dichiara la funzione F
-%    2) cerchi l'istanza che ti serve creando un constraint se il tipo
-%       è una variabile
-%% esempio1:  of (app (fun print_) (num 3))) Z
-%%            output: Z = string
-%% esempio2:  of (lam x \ app (fun print_) x)) Z
-%%            output: Z = X -> string
-%%            con un constraint  (istanza printable X L)
-
-%%%% TODO NEXT B
-%% estendere la sintassi degli schemi con le istanze di type class
-%%    ora:   for_all t \ base (t -> string)
-%%    dopo:   for_all t \ implies (is_instance printable t) (base (t -> string))
-%%
-%% estendere il predicato instantiate in modo che cerchi le istanze
-
-%%%% TODO NEXT 3
-%% implementare il let-in / implementare controllo di corrispondeza
-%% fra fun_decl e fun_impl
-%% recuperando i vincoli
-
-%%%% TODO ORTHOGONAL
-%%  data una istanza, verificare se è ben definita rispetto alla sua typeclass
-%%  esempio:  check (istanza printable int [fun_impl print_ (fun print_int)])
-%%  esempio hard (ne riparliamo): come controllare una istanza condizionale come questa
-%%    istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app (fun map) Print_elem) l))]
-%%    :- istanza printable T [fun_impl print_ Print_elem].
-
 %%% Simply typed lambda calculus
 
 kind tipo type.
@@ -46,7 +15,29 @@ of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
 of (app X Y) B :- of X (arr A B), of Y A.
 of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
-%%% Forall aggiunto ai tipi e dichiarazioni
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% TODO 1: haskell senza type classes
+%  - implementare tutti i costrutti Haskell
+%    usabili per definire funzioni
+%    es. pattern matching (case), e let-in
+%  - definire un programma Haskell come una lista
+%    di funzioni ovvero coppie nome-corpo
+%  - aggiungere il forall ai tipi
+%    es:  forall T \ list T -> list T -> list T
+%    ovvero: un tipo e' dato da una lista di
+%    forall (imbricati) terminati da un tipo
+%    fatto da sole arr
+%    es. forall K \ forall V \ arr (K (arr (hash K V) V))
+%    controesempio:  arr T (forall K \ K)
+%  - implementare il predicato of per i nuovi costrutti
+%  - la regola of per le funzioni deve inserire i
+%    forall per ogni meta-variabile rimasta tale nel
+%    corpo (ELPI only)
+
+
+%%% Forall aggiunto ai tipi
 
 % Si possono avere due tipi (quello fatto di forall+arr e quello fatto di sole arr)
 %
@@ -60,21 +51,6 @@ type base tipo -> schema.
 
 % es.:   for_all X \ for_all Y \ base (arr X Y).
 
-kind nome_fun type.
-kind declaration type.
-type fun_decl nome_fun -> schema -> declaration.
-type assume declaration -> prop.
-
-type fun nome_fun -> term.
-of (fun N) T :- assume (fun_decl N C), instantiate C T.
-
-type instantiate schema -> tipo -> prop.
-instantiate (base T) T.
-instantiate (for_all t \ S t) O :- instantiate (S T_) O.
-
-% es:   app (fun print) 4
-%       =
-%       print 4
 
 %%% Funzioni come coppie nome-corpo
 
@@ -82,16 +58,32 @@ instantiate (for_all t \ S t) O :- instantiate (S T_) O.
 %
 %   - Dichiarazione      es: fun_decl print (for_all T \ base (arr T int))
 %   - Implementazione    es: fun_impl print (lam x \ x)
-%   - Uso                es: print 4	% oppure 'app (fun print) 4'?
+%   - Uso                es: app (fun print) 4
 
-
-
-
-
-type fun_decl nome_fun -> schema -> declaration.		% ~ Non dovrebbe essere 'prop'?
+kind nome_fun type.
+kind declaration type.
+type fun_decl nome_fun -> schema -> declaration.
 %             nome funzione -> tipo funzione -> _ .
-
 % es:   fun_decl foo (for_all T \ base (arr T T))
+type assume declaration -> prop.
+
+kind implementation type.
+type fun_impl nome_fun -> term -> implementation.
+%             nome funzione -> corpo funzione -> _ .
+% es:   fun_impl foo1 (lam x \ lam y \ x + y)
+%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
+
+type fun nome_fun -> term.
+of (fun N) T :- assume (fun_decl N C), instantiate C T.
+% es:   app (fun print) 4
+%       =
+%       print 4
+
+% Per passare da un tipo forall+arr al rispettivo tipo di sole arr
+type instantiate schema -> tipo -> prop.
+instantiate (base T) T.
+instantiate (for_all t \ S t) O :- instantiate (S T_) O.
 
 % es.
 %  Term =
@@ -101,18 +93,6 @@ type fun_decl nome_fun -> schema -> declaration.		% ~ Non dovrebbe essere 'prop'
 %  tutto Term ha tipo int
 
 
-kind implementation type.
-
-type fun_impl nome_fun -> term -> implementation.		% ~ Non dovrebbe essere 'prop'?
-%             nome funzione -> corpo funzione -> _ .
-
-% es:   fun_impl foo1 (lam x \ lam y \ x + y)
-%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
-%       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
-
-
-
-
 %%% Typeclasses
 
 kind nome_classe type.
@@ -120,13 +100,52 @@ type typeclass nome_classe -> tipo -> list declaration -> prop.
 type istanza nome_classe -> tipo -> list implementation -> prop.
 
 
+%%% Costrutto case
+
+% Esempio in pseudocodice:
+%
+%  let f x =
+%   match x of
+%      O => O
+%    | S y => y + 2
+
+kind pair type.
+type case_of term -> list pair -> term.
+type branch string -> term -> pair.
+
+% es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
+
+of (case_of _X L) T :- check_output_list L T.
+
+type check_output_list list pair -> tipo -> prop.
+check_output_list [branch _S R | T] X :- of R X, check_output_list T X.
+check_output_list [] _X.	% Caso base
+
+
+%%% Costrutto let-in
+
+% es:
+%       let
+%           id = lam A \ A
+%       in
+%           id 4
+
+kind decl type.
+kind nome type.
+type let_in list decl -> term -> term.
+type coppia_decl nome -> term -> decl.
+
+% es:   let_in [coppia_decl x 1, coppia_decl y 2, coppia_decl z 3] (x + y + z)
+%              [x = 1, y = 2, z = 3] (x + y + z)
+%              lam x \ lam y \ lam z \ x + y + z
+
+% es:   let_in [coppia_decl id (lam A \ A)] (id 4)
+%              [id = (lam A \ A)] (id 4)
+
+of (let_in _L EXPR) T :- of EXPR T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
 
 % primo esempio senza polimorfismo: riuscire a tipare
 % of 1 int.
@@ -190,142 +209,48 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %test [f, lam x \ app (fun print_) [1,2,3]].
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% TODO 1: haskell senza type classes
-%  - implementare tutti i costrutti Haskell
-%    usabili per definire funzioni
-%    es. pattern matching (case), e let-in
-%  - definire un programma Haskell come una lista
-%    di funzioni ovvero coppie nome-corpo
-%  - aggiungere il forall ai tipi
-%    es:  forall T \ list T -> list T -> list T
-%    ovvero: un tipo e' dato da una lista di
-%    forall (imbricati) terminati da un tipo
-%    fatto da sole arr
-%    es. forall K \ forall V \ arr (K (arr (hash K V) V))
-%    controesempio:  arr T (forall K \ K)
-%  - implementare il predicato of per i nuovi costrutti
-%  - la regola of per le funzioni deve inserire i
-%    forall per ogni meta-variabile rimasta tale nel
-%    corpo (ELPI only)
-
-
-
-
-
-%%% Funzione definita con il costrutto case
-
-% Esempio in pseudocodice:
-%
-%  let f x =
-%   match x of
-%      O => O
-%    | S y => y + 2
-
-
-kind pair type.
-
-type case_of term -> list pair -> term.
-
-type branch string -> term -> pair.
-
-% es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
-
-
-of (case_of _X L) T :- check_output_list L T.
-
-
-type check_output_list list pair -> tipo -> prop.
-
-check_output_list [branch _S R | T] X :- of R X, check_output_list T X.
-check_output_list [] _X.	% Caso base
-
-
-
-
-
-%%% Funzione definita con il costrutto let-in
-
-% es:
-%       let
-%           id = lam A \ A
-%       in
-%           id 4
-
-
-kind decl type.
-kind nome type.
-
-
-type let_in list decl -> term -> term.
-
-type coppia_decl nome -> term -> decl.
-
-% es:   let_in [coppia_decl x 1, coppia_decl y 2, coppia_decl z 3] (x + y + z)
-%              [x = 1, y = 2, z = 3] (x + y + z)
-%              lam x \ lam y \ lam z \ x + y + z
-
-% es:   let_in [coppia_decl id (lam A \ A)] (id 4)
-%              [id = (lam A \ A)] (id 4)
-
-
-of (let_in _L EXPR) T :- of EXPR T.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% (22/11/2019)
+%%%% TODO NEXT A
+%
+% implementare il caso of (fun F) che cerchi un'istanza di F in una type-class
+%    1) cerchi la type-class che dichiara la funzione F
+%    2) cerchi l'istanza che ti serve creando un constraint se il tipo
+%       è una variabile
+%% esempio1:  of (app (fun print_) (num 3))) Z
+%%            output: Z = string
+%% esempio2:  of (lam x \ app (fun print_) x)) Z
+%%            output: Z = X -> string
+%%            con un constraint  (istanza printable X L)
+
+% (22/11/2019)
+%%%% TODO ORTHOGONAL (= ortgonale a TODO NEXT A)
+%%  data una istanza, verificare se è ben definita rispetto alla sua typeclass
+%%  esempio:  check (istanza printable int [fun_impl print_ (fun print_int)])
+%%  esempio hard (ne riparliamo): come controllare una istanza condizionale come questa
+%%    istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app (fun map) Print_elem) l))]
+%%    :- istanza printable T [fun_impl print_ Print_elem].
+
+% (22/11/2019)
+%%%% TODO NEXT B
+%% estendere la sintassi degli schemi con le istanze di type class
+%%    ora:   for_all t \ base (t -> string)
+%%    dopo:   for_all t \ implies (is_instance printable t) (base (t -> string))
+%%
+%% estendere il predicato instantiate in modo che cerchi le istanze
+
+% (22/11/2019)
+%%%% TODO NEXT 3
+%% implementare il let-in / implementare controllo di corrispondeza
+%% fra fun_decl e fun_impl
+%% recuperando i vincoli
 
 
+
+
+
+% (31/10/2019)
 % TODO 2: aggiunta delle type classes
 %  - meccanismo per dichiarare le type classes
 %    (meccanismo = predicato ELPI)
@@ -348,6 +273,7 @@ of (let_in _L EXPR) T :- of EXPR T.
 %    dei vincoli tutte le type-class richieste e le trasformi
 %    nelle premesse =>   (ELPI only)
 
+% (31/10/2019)
 % TODO 3: estensioni delle type classes
 %  - implementare le estensioni sotto forma di regole
 %    ELPI per il predicato di istanze
