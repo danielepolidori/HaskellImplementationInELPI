@@ -18,6 +18,7 @@ of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% (31/10/2019)
 % TODO 1: haskell senza type classes
 %  - implementare tutti i costrutti Haskell
 %    usabili per definire funzioni
@@ -223,6 +224,54 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %% esempio2:  of (lam x \ app (fun print_) x)) Z
 %%            output: Z = X -> string
 %%            con un constraint  (istanza printable X L)
+
+
+of (fun F) T :- typeclass N TA LA, istanza N TB LB, of_fun_in_list LB F T.
+
+% Controlla che nella lista ci sia una funzione N che abbia il tipo T
+% ~ È corretta l'implementazione della funzione?
+type of_fun_in_list list implementation -> nome_fun -> tipo -> prop.
+of_fun_in_list [fun_impl N C | TL] N T :- of C T, !.	% ~ È corretto l'utilizzo del bang?
+of_fun_in_list [fun_impl N C | TL] N T :- of_fun_in_list TL N T.
+
+mode (of i o).
+of X (uvar _ as T) :- !, declare_constraint (of X T) [T].	% ~ In questo modo associa la variabile T al tipo specifico (es: T = string)?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % (22/11/2019)
 %%%% TODO ORTHOGONAL (= ortgonale a TODO NEXT A)
