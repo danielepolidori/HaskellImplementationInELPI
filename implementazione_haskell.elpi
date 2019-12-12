@@ -76,7 +76,8 @@ type fun_impl nome_fun -> term -> implementation.
 %       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
 
 type fun nome_fun -> term.
-of (fun N) T :- assume (fun_decl N C), instantiate C T.
+of (fun N) T :- assume (fun_decl N S), instantiate S T.							% Caso 1: funzione a sé stante
+of (fun N) T :- typeclass N1 T1 L, cerca_fun_in_decl L N S, instantiate S T.	% Caso 2: funzione che è parte di una typeclass
 % es:   app (fun print) 4
 %       =
 %       print 4
@@ -85,6 +86,10 @@ of (fun N) T :- assume (fun_decl N C), instantiate C T.
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
 instantiate (for_all t \ S t) O :- instantiate (S T_) O.
+
+type cerca_fun_in_decl list declaration -> nome_fun -> schema -> prop.
+cerca_fun_in_decl [fun_decl NA SA | TL] NB SB :- cerca_fun_in_decl TL NB SB.
+cerca_fun_in_decl [fun_decl N S | TL] N S.
 
 % es.
 %  Term =
@@ -226,13 +231,13 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %%            con un constraint  (istanza printable X L)
 
 
-of (fun F) T :- typeclass N TA LA, istanza N TB LB, of_fun_in_list LB F T.
+of (fun F) T :- typeclass N TA_ LA_, istanza N TB_ LB, of_fun_in_list LB F T.
 
 % Controlla che nella lista ci sia una funzione N che abbia il tipo T
 % ~ È corretta l'implementazione della funzione?
 type of_fun_in_list list implementation -> nome_fun -> tipo -> prop.
-of_fun_in_list [fun_impl N C | TL] N T :- of C T, !.	% ~ È corretto l'utilizzo del bang?
-of_fun_in_list [fun_impl N C | TL] N T :- of_fun_in_list TL N T.
+of_fun_in_list [fun_impl N C | TL_] N T :- of C T, !.	% ~ È corretto l'utilizzo del bang?
+of_fun_in_list [fun_impl N C_ | TL] N T :- of_fun_in_list TL N T.
 
 mode (of i o).
 of X (uvar _ as T) :- !, declare_constraint (of X T) [T].	% ~ In questo modo associa la variabile T al tipo specifico (es: T = string)?
@@ -244,10 +249,12 @@ of X (uvar _ as T) :- !, declare_constraint (of X T) [T].	% ~ In questo modo ass
 
 
 
+of (app (fun F) ARG) T :- typeclass N TA_ LA_, cerca_fun_in_decl LA_ F S, istanza N TB_ LB, of ARG TB_, estrapola_type_output S T.
 
-
-
-
+% Dallo schema tira fuori il tipo che deve avere l'output
+type estrapola_type_output schema -> tipo -> prop.
+estrapola_type_output (base (arr TA TB)) TB.
+% ...
 
 
 
