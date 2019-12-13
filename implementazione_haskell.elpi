@@ -244,74 +244,7 @@ test 2 Z :- of (app (fun print_) (num 3)) Z.
 test 3 Z :- of (lam x \ app (fun print_) x) Z.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % (22/11/2019)
 %%%% TODO ORTHOGONAL (= ortgonale a TODO NEXT A)
@@ -320,6 +253,52 @@ test 3 Z :- of (lam x \ app (fun print_) x) Z.
 %%  esempio hard (ne riparliamo): come controllare una istanza condizionale come questa
 %%    istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app (fun map) Print_elem) l))]
 %%    :- istanza printable T [fun_impl print_ Print_elem].
+
+
+type check_istanza prop -> prop.
+check_istanza (istanza N TA LA) :- typeclass N TB LB, match_lista_fun LA LB.
+
+% Controlla che ci siano funzioni con lo stesso nome e che abbiano lo stesso tipo
+type match_lista_fun list implementation -> list declaration -> prop.
+match_lista_fun [H|T] L :-
+ search_fun H L LminusH,
+ match_lista_fun T LminusH.
+
+% Fare in modo che O restituisca LminusH
+type search_fun implementation -> list declaration -> list declaration -> prop.
+search_fun (fun_impl N1 C) [fun_decl N2 S | TL] O :- search_fun (fun_impl N1 C) TL O.
+search_fun (fun_impl N C) [fun_decl N S | TL] O :- of C T, instantiate S T.		% Caso base
+search_fun (fun_impl N C) [] O.		% ~ È necessario anche questa linea di codice? (Secondo no, perché in questo caso dovrebbe fallire)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % (22/11/2019)
 %%%% TODO NEXT B
