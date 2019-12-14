@@ -6,6 +6,8 @@
 
 - Aggiungere il CONSTRAINT per l'esempio 2 di TODO NEXT A
 
+- Restituire L-MINUS-H in TODO ORTHOGONAL
+
 
 
 ### DUBBI:

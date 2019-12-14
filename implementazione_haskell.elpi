@@ -3,8 +3,8 @@
 kind tipo type.
 kind term type.
 
-type app  term -> term -> term.
-type lam  (term -> term) -> term.
+type app term -> term -> term.
+type lam (term -> term) -> term.
 
 type arr tipo -> tipo -> tipo.
 
@@ -77,7 +77,7 @@ type fun_impl nome_fun -> term -> implementation.
 
 type fun nome_fun -> term.
 of (fun N) T :- assume (fun_decl N S), instantiate S T.							% Caso 1: funzione a sé stante
-of (fun N) T :- typeclass N1_ T1_ L, cerca_fun_in_decl L N S, instantiate S T.	% Caso 2: funzione che è parte di una typeclass
+of (fun N) T :- typeclass N1_ T1_ L, is_fun_in_decls L N S, instantiate S T.	% Caso 2: funzione che è parte di una typeclass
 % es:   app (fun print) 4
 %       =
 %       print 4
@@ -86,10 +86,6 @@ of (fun N) T :- typeclass N1_ T1_ L, cerca_fun_in_decl L N S, instantiate S T.	%
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
 instantiate (for_all t \ S t) O :- instantiate (S T_) O.
-
-type cerca_fun_in_decl list declaration -> nome_fun -> schema -> prop.
-cerca_fun_in_decl [fun_decl NA_ SA_ | TL] NB SB :- cerca_fun_in_decl TL NB SB.
-cerca_fun_in_decl [fun_decl N S | TL_] N S.
 
 % es.
 %  Term =
@@ -178,7 +174,6 @@ of (let_in _L EXPR) T :- of EXPR T.
 % test [f, lam x \ print [1,2,3]].
 
 
-
 % Usando la mia sintassi:
 
 type string tipo.
@@ -231,7 +226,7 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %%            con un constraint  (istanza printable X L)
 
 
-of (app (fun F) ARG) T :- typeclass N TA_ LA_, cerca_fun_in_decl LA_ F S, istanza N TB_ LB_, of ARG TB_, estrapola_type_output S T.
+of (app (fun F) ARG) T :- typeclass N TA_ LA_, is_fun_in_decls LA_ F S, check_istanza (istanza N TB_ LB_), of ARG TB_, estrapola_type_output S T.
 
 % Dallo schema tira fuori il tipo che deve avere l'output
 type estrapola_type_output schema -> tipo -> prop.
@@ -256,7 +251,7 @@ test 3 Z :- of (lam x \ app (fun print_) x) Z.
 
 
 type check_istanza prop -> prop.
-check_istanza (istanza N TA LA) :- typeclass N TB LB, match_lista_fun LA LB.
+check_istanza (istanza N TA_ LA) :- typeclass N TB_ LB, match_lista_fun LA LB.
 
 % Controlla che ci siano funzioni con lo stesso nome e che abbiano lo stesso tipo
 type match_lista_fun list implementation -> list declaration -> prop.
@@ -264,39 +259,11 @@ match_lista_fun [H|T] L :-
  search_fun H L LminusH,
  match_lista_fun T LminusH.
 
-% Fare in modo che O restituisca LminusH
+% ~ Fare in modo che OUT restituisca LminusH (non sono sicuro che funzioni in questo modo)
 type search_fun implementation -> list declaration -> list declaration -> prop.
-search_fun (fun_impl N1 C) [fun_decl N2 S | TL] O :- search_fun (fun_impl N1 C) TL O.
-search_fun (fun_impl N C) [fun_decl N S | TL] O :- of C T, instantiate S T.		% Caso base
-search_fun (fun_impl N C) [] O.		% ~ È necessario anche questa linea di codice? (Secondo no, perché in questo caso dovrebbe fallire)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+search_fun (fun_impl N1 C) [fun_decl N2 S | TL] OUT :- search_fun (fun_impl N1 C) TL [fun_decl N2 S | OUT].
+search_fun (fun_impl N C) [fun_decl N S | TL] [OUT_ | TL] :- of C T, instantiate S T.		% Caso base
+ 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -307,6 +274,66 @@ search_fun (fun_impl N C) [] O.		% ~ È necessario anche questa linea di codice?
 %%    dopo:   for_all t \ implies (is_instance printable t) (base (t -> string))
 %%
 %% estendere il predicato instantiate in modo che cerchi le istanze
+
+
+kind implication type.
+type is_instance nome_classe -> tipo -> implication.
+
+type implies implication -> schema -> schema.
+
+% es1:   for_all t \ implies (is_instance printable t) (base (arr t string))
+% es2:   for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance printable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))
+
+
+% ~ Non sono sicuro di ciò che chiede la consegna
+type instantiate_fun declaration -> implementation -> prop.
+instantiate_fun (fun_decl F S) (fun_impl F C) :- typeclass N T1_ L1, istanza N T2_ L2, is_fun_in_decls L1 F S, is_fun_in_impls L2 F C.
+
+% Controlla che la funzione con quel nome e con quello schema sia presente nella lista di dichiarazioni
+type is_fun_in_decls list declaration -> nome_fun -> schema -> prop.
+is_fun_in_decls [fun_decl N2_ S2_ | TL] N1 S1 :- is_fun_in_decls TL N1 S1.
+is_fun_in_decls [fun_decl N S | TL_] N S.
+
+% Controlla che la funzione con quel nome e quel corpo sia presente nella lista di implementazioni
+type is_fun_in_impls list implementation -> nome_fun -> term -> prop.
+is_fun_in_impls [fun_impl N2_ C2_ | TL] N1 C1 :- is_fun_in_impls TL N1 C1.
+is_fun_in_impls [fun_impl N C | TL_] N C.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % (22/11/2019)
 %%%% TODO NEXT 3
