@@ -119,8 +119,9 @@ type branch string -> term -> pair.
 
 of (case_of _X L) T :- check_output_list L T.
 
+% Controlla che, per ogni coppia, l'elemento di output abbia un certo tipo
 type check_output_list list pair -> tipo -> prop.
-check_output_list [branch _S R | T] X :- of R X, check_output_list T X.
+check_output_list [branch _S R | TL] X :- of R X, check_output_list TL X.
 check_output_list [] _X.	% Caso base
 
 
@@ -226,6 +227,7 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %%            con un constraint  (istanza printable X L)
 
 
+% ~ Manca il constraint per l'istanza
 of (app (fun F) ARG) T :- typeclass N TA_ LA_, is_fun_in_decls LA_ F S, check_istanza (istanza N TB_ LB_), of ARG TB_, estrapola_type_output S T.
 
 % Dallo schema tira fuori il tipo che deve avere l'output
@@ -298,39 +300,6 @@ is_fun_in_decls [fun_decl N S | TL_] N S.
 type is_fun_in_impls list implementation -> nome_fun -> term -> prop.
 is_fun_in_impls [fun_impl N2_ C2_ | TL] N1 C1 :- is_fun_in_impls TL N1 C1.
 is_fun_in_impls [fun_impl N C | TL_] N C.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
