@@ -77,7 +77,8 @@ type fun_impl nome_fun -> term -> implementation.
 
 type fun nome_fun -> term.
 of (fun N) T :- assume (fun_decl N S), instantiate S T.							% Caso 1: funzione a sé stante
-of (fun N) T :- typeclass N1_ T1_ L, is_fun_in_decls L N S, instantiate S T.	% Caso 2: funzione che è parte di una typeclass
+of (fun N) T :- typeclass N1_ T1 L, is_fun_in_decls L N S, instantiate S T, istanza N1 T1 _.	% Caso 2: funzione che è parte di una typeclass
+
 % es:   app (fun print) 4
 %       =
 %       print 4
@@ -85,7 +86,7 @@ of (fun N) T :- typeclass N1_ T1_ L, is_fun_in_decls L N S, instantiate S T.	% C
 % Per passare da un tipo forall+arr al rispettivo tipo di sole arr
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
-instantiate (for_all t \ S t) O :- instantiate (S T_) O.
+instantiate (for_all S) O :- instantiate (S T_) O.
 
 % es.
 %  Term =
@@ -101,6 +102,17 @@ kind nome_classe type.
 type typeclass nome_classe -> tipo -> list declaration -> prop.
 type istanza nome_classe -> tipo -> list implementation -> prop.
 
+mode (istanza i i o).
+istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
+
+%%% ADT (Algebraic Data Types=
+
+% Esempio in pseudocodice:
+%
+% type nat = O | S of nat
+% type List A = [] | :: of A * (List A)
+% type Tree K V = Leaf of K * V | Node of (Tree K V) * V * (Tree K V)
+% type option A = None | Some of A
 
 %%% Costrutto case
 
@@ -110,6 +122,16 @@ type istanza nome_classe -> tipo -> list implementation -> prop.
 %   match x of
 %      O => O
 %    | S y => y + 2
+%
+%  let sum x =
+%   match x of
+%      [] => O
+%    | y::L => y + sum L 
+%
+%  let search K1 T =
+%   match T with
+%      Leaf(K2,V) => if K1 == K2 then Some V else None
+%    | Node(T1,K2,T2) => if K1 <= K2 then search K1 T1 else search K1 T2
 
 kind pair type.
 type case_of term -> list pair -> term.
@@ -132,6 +154,19 @@ check_output_list [] _X.	% Caso base
 %           id = lam A \ A
 %       in
 %           id 4
+%
+%       let
+%           even = lam x \ match x with O => true | S n => odd n
+%           odd  = lam x \ match x with O => false | S n => even n
+%       in
+%           even 3
+
+%
+% a) prima passata: associ a even Teven e a odd Todd (variabili fresche)
+% b) chiami  of (corpo_di_even) Teven e poi of (corpo_di_odd) Todd
+% c) [TODO] trasformare i tipi Teven e Todd in schema tramite constraints
+% d) tipi il corpo del let-in
+%
 
 kind decl type.
 kind nome type.
@@ -227,15 +262,6 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 %%            con un constraint  (istanza printable X L)
 
 
-% ~ Manca il constraint per l'istanza
-of (app (fun F) ARG) T :- typeclass N TA_ LA_, is_fun_in_decls LA_ F S, check_istanza (istanza N TB_ LB_), of ARG TB_, estrapola_type_output S T.
-
-% Dallo schema tira fuori il tipo che deve avere l'output
-type estrapola_type_output schema -> tipo -> prop.
-estrapola_type_output (base (arr TA_ TB)) TB.	% Caso base
-estrapola_type_output (for_all t \ S t) O :- estrapola_type_output (S T_) O.
-
-
 %%% Test
 test 2 Z :- of (app (fun print_) (num 3)) Z.
 test 3 Z :- of (lam x \ app (fun print_) x) Z.
@@ -263,8 +289,8 @@ match_lista_fun [H|T] L :-
 
 % ~ Fare in modo che OUT restituisca LminusH (non sono sicuro che funzioni in questo modo)
 type search_fun implementation -> list declaration -> list declaration -> prop.
-search_fun (fun_impl N1 C) [fun_decl N2 S | TL] OUT :- search_fun (fun_impl N1 C) TL [fun_decl N2 S | OUT].
-search_fun (fun_impl N C) [fun_decl N S | TL] [OUT_ | TL] :- of C T, instantiate S T.		% Caso base
+search_fun (fun_impl N1 C) [fun_decl N2 S | TL] [fun_decl N2 S | OUT] :- search_fun (fun_impl N1 C) TL OUT.
+search_fun (fun_impl N C) [fun_decl N S | TL] TL :- of C T, instantiate S T.		% Caso base
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,18 +304,15 @@ search_fun (fun_impl N C) [fun_decl N S | TL] [OUT_ | TL] :- of C T, instantiate
 %% estendere il predicato instantiate in modo che cerchi le istanze
 
 
-kind implication type.
-type is_instance nome_classe -> tipo -> implication.
+kind holds type.
+type is_instance nome_classe -> tipo -> holds.
 
-type implies implication -> schema -> schema.
+type implies holds -> schema -> schema.
+
+instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.
 
 % es1:   for_all t \ implies (is_instance printable t) (base (arr t string))
 % es2:   for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance printable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))
-
-
-% ~ Non sono sicuro di ciò che chiede la consegna
-type instantiate_fun declaration -> implementation -> prop.
-instantiate_fun (fun_decl F S) (fun_impl F C) :- typeclass N T1_ L1, istanza N T2_ L2, is_fun_in_decls L1 F S, is_fun_in_impls L2 F C.
 
 % Controlla che la funzione con quel nome e con quello schema sia presente nella lista di dichiarazioni
 type is_fun_in_decls list declaration -> nome_fun -> schema -> prop.
