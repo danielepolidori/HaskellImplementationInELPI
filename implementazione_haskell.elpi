@@ -83,6 +83,7 @@ type fun nome_fun -> term.
 
 of (fun N) T :- assume (fun_decl N S), instantiate S T.											% Caso 1: funzione a sé stante
 of (fun N) T :- typeclass N1 T1 L, is_fun_in_decls L N S, instantiate S T, istanza N1 T1 _.		% Caso 2: funzione che è parte di una typeclass
+% ~ È giusto che istanza e typeclass abbiano lo stesso tipo T1? Non dovrebbe essere che la typeclass ha un tipo generico e l'istanza un tipo concreto?
 
 % Controlla che la funzione con quel nome e con quello schema sia presente nella lista di dichiarazioni
 type is_fun_in_decls list declaration -> nome_fun -> schema -> prop.
@@ -187,11 +188,11 @@ type let_in list decl -> term -> term.
 type coppia_decl nome -> term -> decl.
 
 % es:   let_in [coppia_decl x 1, coppia_decl y 2, coppia_decl z 3] (x + y + z)
-%              [x = 1, y = 2, z = 3] (x + y + z)
-%              lam x \ lam y \ lam z \ x + y + z
+%              cioè   [x = 1, y = 2, z = 3] (x + y + z)
+%              cioè   lam x \ lam y \ lam z \ x + y + z
 
 % es:   let_in [coppia_decl id (lam A \ A)] (id 4)
-%              [id = (lam A \ A)] (id 4)
+%              cioè   [id = (lam A \ A)] (id 4)
 
 % ~ Sbagliato: deve considerare anche la lista L
 of (let_in _L EXPR) T :- of EXPR T.
