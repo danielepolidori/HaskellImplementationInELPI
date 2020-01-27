@@ -72,7 +72,7 @@ kind implementation type.
 type fun_impl nome_fun -> term -> implementation.
 %             nome funzione -> corpo funzione -> _ .
 % es:   fun_impl foo1 (lam x \ lam y \ x + y)
-%       fun_impl foo2 (case_of x [branch "0" 0, branch "S" (lam y \ y + 2)])
+%       fun_impl foo2 (case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))])
 %       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
 
 type fun nome_fun -> term.
@@ -113,7 +113,6 @@ mode (istanza i i o).
 istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 
 
-% ~ Sono da implementare
 %%% ADT (Algebraic Data Types)
 
 % Li abbiamo introdotti perché necessari per il costrutto case
@@ -125,9 +124,27 @@ istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 % type Tree K V = Leaf of K * V | Node of (Tree K V) * V * (Tree K V)
 % type option A = None | Some of A
 
-type succ term -> term.
-% es:   num 0
-% es:   succ (succ (succ (num 0)))
+kind adt type.
+
+type nat int -> adt.
+type succ adt -> adt.
+% es:   nat 0
+% es:   succ (succ (succ (nat 0)))
+
+type lista_vuota adt.
+type lista list term -> adt.
+% es:   lista_vuota
+% es:   lista [H|TL]
+
+type leaf int -> term -> adt.	% ~ È giusto che V sia considerato di tipo 'term'?
+type node adt -> int -> adt -> adt.
+% es:   leaf 3 x
+% es:   node (leaf 4 x) 9 (node (leaf 11 y) 13 (leaf 15 z))
+
+type none adt.
+type some term -> adt.	% ~ È giusto che V sia considerato di tipo 'term'?
+% es:   none
+% es:   some x
 
 
 %%% Costrutto case
@@ -151,10 +168,10 @@ type succ term -> term.
 
 kind pair type.
 type case_of term -> list pair -> term.
-type branch string -> term -> pair.
-% ~ Forse invece è:   type branch adt -> term -> pair.
-
-% es:   case_of x [branch "0" 0, branch "S" (lam y \ y + 2)]
+type branch adt -> term -> pair.
+% es:   case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))]
+% es:   fun_impl sum (x \ case_of x [branch lista_vuota (num 0), branch (lista [H|TL]) (num (H + (sum TL)))])
+% es:   fun_impl search (k1 \ t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K2 T2) (if (k1 <= K2) then (search k1 T1) else (search k1 T2))])
 
 of (case_of _X L) T :- check_output_list L T.
 
