@@ -167,19 +167,20 @@ type some term -> adt.	% ~ È giusto che V sia considerato di tipo 'term'?
 %    | Node(T1,K2,T2) => if K1 <= K2 then search K1 T1 else search K1 T2
 
 kind pair type.
-type case_of term -> list pair -> term.
+type case_of adt -> list pair -> term.	% ~ Come primo input deve prendere un adt o un term?
 type branch adt -> term -> pair.
 % es:   case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))]
 % es:   fun_impl sum (x \ case_of x [branch lista_vuota (num 0), branch (lista [H|TL]) (num (H + (sum TL)))])
 % es:   fun_impl search (k1 \ t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K2 T2) (if (k1 <= K2) then (search k1 T1) else (search k1 T2))])
 
-of (case_of _X L) T :- check_output_list L T.
+% Il case intero ha come tipo il tipo dell'output dei singoli rami
+of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 
 % ~ È sbagliata: non devono avere tutti lo stesso tipo, ma ogni ramo ha il suo tipo
-% Controlla che, per ogni coppia, l'elemento di output abbia un certo tipo
-type check_output_list list pair -> tipo -> prop.
-check_output_list [branch _S R | TL] X :- of R X, check_output_list TL X.
-check_output_list [] _X.	% Caso base
+% Controlla che, per ogni coppia, gli elementi di input abbiano tutti lo stesso tipo dell'input del case e gli elementi di output abbiano tutti un certo tipo
+type check_list_case list pair -> tipo -> tipo -> prop.
+check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
+check_list_case [] _T1 _T2.		% Caso base
 
 
 %%% Costrutto let-in
@@ -189,35 +190,43 @@ check_output_list [] _X.	% Caso base
 %           id = lam A \ A
 %       in
 %           id 4
-%
+
+% es:
 %       let
 %           even = lam x \ match x with O => true | S n => odd n
 %           odd  = lam x \ match x with O => false | S n => even n
 %       in
 %           even 3
-
-% ~ DA FARE: me lo ha scritto il prof al ricevimento del 17/12/2019
 %
+%       Nella mia sintassi:
+%        let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) true, branch (succ N) (odd N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) false, branch (succ N) (even N)])] (even 3)
+%
+% ~ DA FARE: me lo ha scritto il prof al ricevimento del 17/12/2019
 % a) prima passata: associ a even Teven e a odd Todd (variabili fresche)
 % b) chiami  of (corpo_di_even) Teven e poi of (corpo_di_odd) Todd
 % c) [TODO] trasformare i tipi Teven e Todd in schema tramite constraints
 % d) tipi il corpo del let-in
-%
 
 kind decl type.
-kind nome type.
+kind nome_decl type.
 type let_in list decl -> term -> term.
-type coppia_decl nome -> term -> decl.
+type coppia_decl nome_decl -> term -> decl.
+%				 nome -> corpo ->.
 
-% es:   let_in [coppia_decl x 1, coppia_decl y 2, coppia_decl z 3] (x + y + z)
+% es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (x + y + z)
 %              cioè   [x = 1, y = 2, z = 3] (x + y + z)
 %              cioè   lam x \ lam y \ lam z \ x + y + z
 
 % es:   let_in [coppia_decl id (lam A \ A)] (id 4)
 %              cioè   [id = (lam A \ A)] (id 4)
 
-% ~ Sbagliato: deve considerare anche la lista L
-of (let_in _L EXPR) T :- of EXPR T.
+% Deve considerare anche la lista L nel tipaggio
+of (let_in L EXPR) T :- of EXPR T, check_list_let L.
+
+type check_list_let list decl -> prop.
+check_list_let [coppia_decl N C | TL] :- associa_tipo N T, of C T, check_list_let TL.
+
+type associa_tipo nome_decl -> tipo -> prop.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

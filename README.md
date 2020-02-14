@@ -4,15 +4,31 @@
 
 ### DA FARE:
 
-- Tipaggio CASE
+- Non è possibile fare 'of X T' con X che sia un adt (e non un term)
 
 - Tipaggio LET-IN
+
+- Tipaggio CASE
+
+- È bene avere gli ADT tutti dello stesso tipo ('adt')? Oppure andrebbero differenziati nei vari tipi (nat, list, tree, option) con 'adt' come sovratipo generale?
+  (Osservazione: Potrebbe essere meglio differenziarli perché in questo modo si potrebbero differenziare anche i tipi dei rami del case, anziché controllare soltanto che siano tutti adt)
 
 
 
 ### BOZZE:
 
-of (case_of X [branch A B]) T1 :- of B T1, of X T2, of A T2.
+idea 1)
+ 
+ type adt tipo.
 
-- Il case intero ha come tipo il tipo dell'output dei singoli rami.
-- X è dello stesso tipo dell'input dei rami.
+ of (nat 0) adt.
+ of (succ N) adt.
+ of (tree T) adt.
+ % ...
+
+
+idea 2)
+
+ type adt term.
+
+ % Quindi è possibile fare 'of X T' con X che sia un adt (perché vale come term)
