@@ -72,7 +72,7 @@ kind implementation type.
 type fun_impl nome_fun -> term -> implementation.
 %             nome funzione -> corpo funzione -> _ .
 % es:   fun_impl foo1 (lam x \ lam y \ x + y)
-%       fun_impl foo2 (case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))])
+%       fun_impl foo2 (lam x \ case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))])
 %       fun_impl foo3 (let_in [coppia_decl id (lam A \ A)] (id 4))
 
 type fun nome_fun -> term.
@@ -134,12 +134,12 @@ of (nat _) natural.
 of (succ _) natural.
 
 type lista_vuota term.
-type lista list term -> term.
+type lista_piena list term -> term.
 % es:   lista_vuota
-% es:   lista [H|TL]
+% es:   lista_piena [H|TL]
 type lista tipo.
 of lista_vuota lista.
-of (lista _) lista.
+of (lista_piena _) lista.
 
 type leaf int -> term -> term.	% ~ È giusto che V sia considerato di tipo 'term'?
 type node term -> int -> term -> term.
@@ -149,13 +149,13 @@ type tree tipo.
 of (leaf _ _) tree.
 of (node _ _ _) tree.
 
-type none term.
-type some term -> term.	% ~ È giusto che A sia considerato di tipo 'term'?
+type none_ term.
+type some_ term -> term.	% ~ È giusto che A sia considerato di tipo 'term'?
 % es:   none
 % es:   some x
 type option tipo.
-of none option.
-of (some _) option.
+of none_ option.
+of (some_ _) option.
 
 
 %%% Costrutto case
@@ -181,8 +181,8 @@ kind pair type.
 type case_of term -> list pair -> term.
 type branch term -> term -> pair.
 % es:   case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))]
-% es:   fun_impl sum (x \ case_of x [branch lista_vuota (num 0), branch (lista [H|TL]) (num (H + (sum TL)))])
-% es:   fun_impl search (k1 \ t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K2 T2) (if (k1 <= K2) then (search k1 T1) else (search k1 T2))])
+% es:   fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])
+% es:   fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K3 T2) (if (k1 <= K3) then (search k1 T1) else (search k1 T2))])
 
 % Il case intero ha come tipo il tipo dell'output dei singoli rami
 of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
@@ -192,6 +192,20 @@ of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
 check_list_case [] _T1 _T2.		% Caso base
+
+% Test
+type assume_impl implementation -> prop.
+type sum nome_fun.
+type num_to_int term -> int.
+assume_impl (fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])).
+type search nome_fun.
+assume_impl (fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf _ _) _, branch (node _ _ _) _])).
+test_type 4 T :-
+ of (case_of _X [branch (nat 0) (num 0), branch (succ _) (num _)]) T.
+test_type 5 T :-
+ of (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))]) T.
+test_type 6 T :-
+ of (lam x \ case_of x [branch (leaf _ _) (some_ _), branch (node _ _ _) none_]) T.
 
 
 %%% Costrutto let-in
@@ -286,8 +300,8 @@ assume (fun_decl map (for_all s \ for_all t \ base (arr (arr s t) (arr (list s) 
 assume (fun_decl concat (base (arr (list string) string))).
 
 %% Test sui for_all
-type test int -> tipo -> prop.
-test 1 OUT :-
+type test_type int -> tipo -> prop.
+test_type 1 OUT :-
  of (lam l \ app (fun concat) (app (app (fun map) (fun print_int)) l)) OUT.
 
 type printable nome_classe.
@@ -320,8 +334,8 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 
 
 %%% Test
-test 2 Z :- of (app (fun print_) (num 3)) Z.
-test 3 Z :- of (lam x \ app (fun print_) x) Z.
+test_type 2 Z :- of (app (fun print_) (num 3)) Z.
+test_type 3 Z :- of (lam x \ app (fun print_) x) Z.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
