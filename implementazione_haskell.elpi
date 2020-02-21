@@ -94,7 +94,8 @@ is_fun_in_decls [fun_decl N S | TL_] N S.
 % Per passare da un tipo forall+arr al rispettivo tipo di sole arr
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
-instantiate (for_all S) O :- instantiate (S T_) O.
+instantiate (for_all S) O :- instantiate (S T_) O.		% ~ '(S T_)' è una funzione con un argomento in input (es: 'F x') così da avere alla fine la base istanziata? (es: S = X \ for_all Y \ base (arr X Y))
+% instantiate (for_all X_ \ S) O :- instantiate S O.	% ~ Idea mia: Se è 'for_all' semplicemente passa avanti e quando è 'base' ritorna il suo argomento
 
 % es.
 %  Term =
@@ -187,7 +188,6 @@ type branch term -> term -> pair.
 % Il case intero ha come tipo il tipo dell'output dei singoli rami
 of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 
-% ~ È sbagliata: non devono avere tutti lo stesso tipo, ma ogni ramo ha il suo tipo
 % Controlla che, per ogni coppia, gli elementi di input abbiano tutti lo stesso tipo dell'input del case e gli elementi di output abbiano tutti un certo tipo
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
@@ -224,9 +224,8 @@ test_type 6 T :-
 %           even 3
 %
 %       Nella mia sintassi:
-%        let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) true, branch (succ N) (odd N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) false, branch (succ N) (even N)])] (even 3)
+%        let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) (boolean tt), branch (succ N) (app (decl_let odd) N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) (boolean ff), branch (succ N) (app (decl_let even) N)])] (app (decl_let even) (num 3))
 %
-% ~ DA FARE: me lo ha scritto il prof al ricevimento del 17/12/2019
 % a) prima passata: associ a even Teven e a odd Todd (variabili fresche)
 % b) chiami  of (corpo_di_even) Teven e poi of (corpo_di_odd) Todd
 % c) [TODO] trasformare i tipi Teven e Todd in schema tramite constraints
@@ -238,7 +237,7 @@ type let_in list decl -> term -> term.
 type coppia_decl nome_decl -> term -> decl.
 %				 nome -> corpo ->.
 
-% es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (x + y + z)
+% es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))
 %              cioè   [x = 1, y = 2, z = 3] (x + y + z)
 %              cioè   lam x \ lam y \ lam z \ x + y + z
 
@@ -246,12 +245,39 @@ type coppia_decl nome_decl -> term -> decl.
 %              cioè   [id = (lam A \ A)] (id 4)
 
 % Deve considerare anche la lista L nel tipaggio
-of (let_in L EXPR) T :- of EXPR T, check_list_let L.
+of (let_in L EXPR) T :- check_list_let L, of EXPR T.
 
 type check_list_let list decl -> prop.
-check_list_let [coppia_decl N C | TL] :- associa_tipo N T, of C T, check_list_let TL.
+%check_list_let [coppia_decl N C | TL] :- associa_tipo N S, of C T, inverse_instantiate T S, check_list_let TL.
+%check_list_let [coppia_decl N C | TL] :- associa_tipo N T, of C T, check_list_let TL.
+check_list_let [coppia_decl N C | TL] :- of (decl_let N) T, of C T, check_list_let TL.
 
-type associa_tipo nome_decl -> tipo -> prop.
+type inverse_instantiate tipo -> schema -> prop.
+%inverse_instantiate (arr T1 T2) S :- [...].
+%inverse_instantiate (arr T T) S :- [...].
+%inverse_instantiate T S :- [...].
+
+type associa_tipo nome_decl -> tipo -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
+%mode (associa_tipo i o).
+%associa_tipo N (uvar _ as X) :- !, declare_constraint (associa_tipo N X) [X].
+
+type decl_let nome_decl -> term.
+
+% Test
+type x nome_decl.
+type y nome_decl.
+type z nome_decl.
+type somma nome_fun.
+assume (fun_decl somma (base (arr int (arr int int)))).
+type even nome_decl.
+type odd nome_decl.
+type boolean bool -> term.
+type bool tipo.
+of (boolean _) bool.
+test_type 7 T :-
+ of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))) T.
+%test_type 8 T :-
+ %of (let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) (boolean tt), branch (succ N) (app (decl_let odd) N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) (boolean ff), branch (succ N) (app (decl_let even) N)])] (app (decl_let even) (num 3))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
