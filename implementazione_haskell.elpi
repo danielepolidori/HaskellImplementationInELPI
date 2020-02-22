@@ -248,9 +248,9 @@ type coppia_decl nome_decl -> term -> decl.
 of (let_in L EXPR) T :- check_list_let L, of EXPR T.
 
 type check_list_let list decl -> prop.
+check_list_let [].	% Caso base
 %check_list_let [coppia_decl N C | TL] :- associa_tipo N S, of C T, inverse_instantiate T S, check_list_let TL.
 check_list_let [coppia_decl N C | TL] :- associa_tipo T N, of C T, check_list_let TL.
-%check_list_let [coppia_decl N C | TL] :- of (decl_let N) T, of C T, check_list_let TL.
 
 type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate (arr T1 T2) S :- [...].
@@ -258,11 +258,11 @@ type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate T S :- [...].
 
 type associa_tipo tipo -> nome_decl -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
-mode (associa_tipo i o).	% ~ Va bene che l'ouput sia 'uvar X' e non l'input?
+mode (associa_tipo i o).	% ~ Va bene l'associazione di input e ouput ad 'uvar X'?
 associa_tipo (uvar _ as X) N :- !, declare_constraint (associa_tipo X N) [X].
-of (decl_let N) T :- associa_tipo T N.
 
 type decl_let nome_decl -> term.
+%of (decl_let N) T :- associa_tipo T N.
 
 % Test
 type x nome_decl.
