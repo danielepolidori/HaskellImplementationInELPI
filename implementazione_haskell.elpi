@@ -249,17 +249,18 @@ of (let_in L EXPR) T :- check_list_let L, of EXPR T.
 
 type check_list_let list decl -> prop.
 %check_list_let [coppia_decl N C | TL] :- associa_tipo N S, of C T, inverse_instantiate T S, check_list_let TL.
-%check_list_let [coppia_decl N C | TL] :- associa_tipo N T, of C T, check_list_let TL.
-check_list_let [coppia_decl N C | TL] :- of (decl_let N) T, of C T, check_list_let TL.
+check_list_let [coppia_decl N C | TL] :- associa_tipo T N, of C T, check_list_let TL.
+%check_list_let [coppia_decl N C | TL] :- of (decl_let N) T, of C T, check_list_let TL.
 
 type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate (arr T1 T2) S :- [...].
 %inverse_instantiate (arr T T) S :- [...].
 %inverse_instantiate T S :- [...].
 
-type associa_tipo nome_decl -> tipo -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
-%mode (associa_tipo i o).
-%associa_tipo N (uvar _ as X) :- !, declare_constraint (associa_tipo N X) [X].
+type associa_tipo tipo -> nome_decl -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
+mode (associa_tipo i o).	% ~ Va bene che l'ouput sia 'uvar X' e non l'input?
+associa_tipo (uvar _ as X) N :- !, declare_constraint (associa_tipo X N) [X].
+of (decl_let N) T :- associa_tipo T N.
 
 type decl_let nome_decl -> term.
 
@@ -269,13 +270,16 @@ type y nome_decl.
 type z nome_decl.
 type somma nome_fun.
 assume (fun_decl somma (base (arr int (arr int int)))).
+type foo nome_fun.
+assume (fun_decl foo (for_all t \ base (arr t t))).
 type even nome_decl.
 type odd nome_decl.
 type boolean bool -> term.
 type bool tipo.
 of (boolean _) bool.
 test_type 7 T :-
- of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))) T.
+ of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num 0)) T.
+ %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma) (app (app (fun somma) (decl_let x)) (decl_let y))) (decl_let z))) T.
 %test_type 8 T :-
  %of (let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) (boolean tt), branch (succ N) (app (decl_let odd) N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) (boolean ff), branch (succ N) (app (decl_let even) N)])] (app (decl_let even) (num 3))) T.
 
