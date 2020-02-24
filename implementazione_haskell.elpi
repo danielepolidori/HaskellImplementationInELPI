@@ -88,8 +88,8 @@ of (fun N) T :- typeclass N1 T1 L, is_fun_in_decls L N S, instantiate S T, istan
 
 % Controlla che la funzione con quel nome e con quello schema sia presente nella lista di dichiarazioni
 type is_fun_in_decls list declaration -> nome_fun -> schema -> prop.
+is_fun_in_decls [fun_decl N S | TL_] N S.	% Caso base
 is_fun_in_decls [fun_decl N2_ S2_ | TL] N1 S1 :- is_fun_in_decls TL N1 S1.
-is_fun_in_decls [fun_decl N S | TL_] N S.
 
 % Per passare da un tipo forall+arr al rispettivo tipo di sole arr
 type instantiate schema -> tipo -> prop.
@@ -126,7 +126,12 @@ istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 % type Tree K V = Leaf of K * V | Node of (Tree K V) * V * (Tree K V)
 % type option A = None | Some of A
 
-type nat int -> term.
+% lista di costruttori con lista di tipi associati al costruttore
+% il costruttore ha un tipo
+% separa dichiarazione da occorrenza del tipo
+% temrine è construttore con un certo numero di argomento (lista, perché diverso ogni volta)
+
+type zero_ term.
 type succ term -> term.
 % es:   nat 0
 % es:   succ (succ (succ (nat 0)))
@@ -135,7 +140,8 @@ of (nat _) natural.
 of (succ _) natural.
 
 type lista_vuota term.
-type lista_piena list term -> term.
+%type lista_piena list term -> term.
+type cons term -> term -> term. % prende testa e coda
 % es:   lista_vuota
 % es:   lista_piena [H|TL]
 type lista tipo.
@@ -180,7 +186,8 @@ of (some_ _) option.
 
 kind pair type.
 type case_of term -> list pair -> term.
-type branch term -> term -> pair.
+%type branch term -> term -> pair.
+type branch nome_costruttore -> (term -> term) -> pair.
 % es:   case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))]
 % es:   fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])
 % es:   fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K3 T2) (if (k1 <= K3) then (search k1 T1) else (search k1 T2))])
@@ -245,12 +252,15 @@ type coppia_decl nome_decl -> term -> decl.
 %              cioè   [id = (lam A \ A)] (id 4)
 
 % Deve considerare anche la lista L nel tipaggio
-of (let_in L EXPR) T :- check_list_let L, of EXPR T.
+%of (let_in L EXPR) T :- check_list_let L, of EXPR T.
+of (let_in L EXPR) T :- check_list_let L (of EXPR T).
 
 type check_list_let list decl -> prop.
-check_list_let [].	% Caso base
+%check_list_let [].	% Caso base
+check_list_let [] CMD :- CMD.	% Caso base
 %check_list_let [coppia_decl N C | TL] :- associa_tipo N S, of C T, inverse_instantiate T S, check_list_let TL.
-check_list_let [coppia_decl N C | TL] :- associa_tipo T N, of C T, check_list_let TL.
+%check_list_let [coppia_decl N C | TL] :- associa_tipo T N, of C T, check_list_let TL.
+check_list_let [coppia_decl N C | TL] :- associa_tipo T N => of C T, check_list_let TL.
 
 type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate (arr T1 T2) S :- [...].
@@ -258,11 +268,11 @@ type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate T S :- [...].
 
 type associa_tipo tipo -> nome_decl -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
-mode (associa_tipo i o).	% ~ Va bene l'associazione di input e ouput ad 'uvar X'?
-associa_tipo (uvar _ as X) N :- !, declare_constraint (associa_tipo X N) [X].
+%mode (associa_tipo i o).	% ~ Va bene l'associazione di input e ouput ad 'uvar X'?
+%associa_tipo (uvar _ as X) N :- !, declare_constraint (associa_tipo X N).
 
 type decl_let nome_decl -> term.
-%of (decl_let N) T :- associa_tipo T N.
+of (decl_let N) T :- associa_tipo T N.		% questa riga ci vuole
 
 % Test
 type x nome_decl.
