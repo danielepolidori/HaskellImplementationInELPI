@@ -126,17 +126,30 @@ istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 % type Tree K V = Leaf of K * V | Node of (Tree K V) * V * (Tree K V)
 % type option A = None | Some of A
 
+% ~~
 % lista di costruttori con lista di tipi associati al costruttore
 % il costruttore ha un tipo
 % separa dichiarazione da occorrenza del tipo
-% temrine è construttore con un certo numero di argomento (lista, perché diverso ogni volta)
+% termine è costruttore con un certo numero di argomenti (lista, perché diverso ogni volta)
+
+kind nome_costruttore_adt type.
+type adt nome_costruttore_adt -> list term -> term.
+%        nome_adt -> argomenti_in_input_al_costruttore ->.
+% es:   adt zero_ []
+% es:   adt succ [N]
+% es:   adt lista_vuota []
+% es:   adt cons [H, TL]
+% es:   adt leaf [K, V]
+% es:   adt node [T, K, T]
+% es:   adt none_ []
+% es:   adt some_ [A]
 
 type zero_ term.
 type succ term -> term.
 % es:   nat 0
 % es:   succ (succ (succ (nat 0)))
 type natural tipo.
-of (nat _) natural.
+%of (nat _) natural.
 of (succ _) natural.
 
 type lista_vuota term.
@@ -146,7 +159,7 @@ type cons term -> term -> term. % prende testa e coda
 % es:   lista_piena [H|TL]
 type lista tipo.
 of lista_vuota lista.
-of (lista_piena _) lista.
+%of (lista_piena _) lista.
 
 type leaf int -> term -> term.	% ~ È giusto che V sia considerato di tipo 'term'?
 type node term -> int -> term -> term.
@@ -186,33 +199,35 @@ of (some_ _) option.
 
 kind pair type.
 type case_of term -> list pair -> term.
-%type branch term -> term -> pair.
-type branch nome_costruttore -> (term -> term) -> pair.
-% es:   case_of x [branch (nat 0) (num 0), branch (succ N) (nat_to_num (succ (succ N)))]
-% es:   fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])
-% es:   fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf K2 V) (if (k1 == K2) then (some V) else none), branch (node T1 K3 T2) (if (k1 <= K3) then (search k1 T1) else (search k1 T2))])
+type dato (term -> pair) -> pair.
+type branch term -> term -> pair.
+% es:   case_of x [branch (adt zero_ []) (num 0), dato y \ branch (adt succ [y]) (num ((nat_to_num y) + 2))]
+% es:   fun_impl sum (lam x \ case_of x [branch (adt lista_vuota []) (num 0), dato y \ branch (adt cons [y, l]) (num ((num_to_int y) + (num_to_int (app (fun sum) (adt cons [l])))))])
+% es:   fun_impl search (lam k1 \ lam t \ case_of t [dato k2 \ dato v \ branch (adt leaf [k2, v]) (if k1 == k2 then (some_ v) else none_), dato t1 \ dato k2 \ dato t2 \ branch (node t1 k2 t2) (if (k1 <= k2) then (search k1 t1) else (search k1 t2))])
+
+% ~ Sistemare il case da qui in poi secondo le nuove modifiche, saltata con il prof
 
 % Il case intero ha come tipo il tipo dell'output dei singoli rami
 of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 
 % Controlla che, per ogni coppia, gli elementi di input abbiano tutti lo stesso tipo dell'input del case e gli elementi di output abbiano tutti un certo tipo
 type check_list_case list pair -> tipo -> tipo -> prop.
-check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
 check_list_case [] _T1 _T2.		% Caso base
+check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
 
 % Test
 type assume_impl implementation -> prop.
 type sum nome_fun.
 type num_to_int term -> int.
-assume_impl (fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])).
+%assume_impl (fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])).
 type search nome_fun.
-assume_impl (fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf _ _) _, branch (node _ _ _) _])).
-test_type 4 T :-
- of (case_of _X [branch (nat 0) (num 0), branch (succ _) (num _)]) T.
-test_type 5 T :-
- of (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))]) T.
-test_type 6 T :-
- of (lam x \ case_of x [branch (leaf _ _) (some_ _), branch (node _ _ _) none_]) T.
+%assume_impl (fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf _ _) _, branch (node _ _ _) _])).
+%test_type 4 T :-
+ %of (case_of _X [branch (nat 0) (num 0), branch (succ _) (num _)]) T.
+%test_type 5 T :-
+ %of (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))]) T.
+%test_type 6 T :-
+ %of (lam x \ case_of x [branch (leaf _ _) (some_ _), branch (node _ _ _) none_]) T.
 
 
 %%% Costrutto let-in
@@ -251,28 +266,22 @@ type coppia_decl nome_decl -> term -> decl.
 % es:   let_in [coppia_decl id (lam A \ A)] (id 4)
 %              cioè   [id = (lam A \ A)] (id 4)
 
-% Deve considerare anche la lista L nel tipaggio
-%of (let_in L EXPR) T :- check_list_let L, of EXPR T.
 of (let_in L EXPR) T :- check_list_let L (of EXPR T).
 
-type check_list_let list decl -> prop.
-%check_list_let [].	% Caso base
+type check_list_let list decl -> prop -> prop.
 check_list_let [] CMD :- CMD.	% Caso base
 %check_list_let [coppia_decl N C | TL] :- associa_tipo N S, of C T, inverse_instantiate T S, check_list_let TL.
-%check_list_let [coppia_decl N C | TL] :- associa_tipo T N, of C T, check_list_let TL.
-check_list_let [coppia_decl N C | TL] :- associa_tipo T N => of C T, check_list_let TL.
+check_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T => of C T, check_list_let TL CMD.
 
 type inverse_instantiate tipo -> schema -> prop.
 %inverse_instantiate (arr T1 T2) S :- [...].
 %inverse_instantiate (arr T T) S :- [...].
 %inverse_instantiate T S :- [...].
 
-type associa_tipo tipo -> nome_decl -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
-%mode (associa_tipo i o).	% ~ Va bene l'associazione di input e ouput ad 'uvar X'?
-%associa_tipo (uvar _ as X) N :- !, declare_constraint (associa_tipo X N).
+type associa_tipo nome_decl -> tipo -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
 
 type decl_let nome_decl -> term.
-of (decl_let N) T :- associa_tipo T N.		% questa riga ci vuole
+of (decl_let N) T :- associa_tipo N T.
 
 % Test
 type x nome_decl.
@@ -289,8 +298,9 @@ type bool tipo.
 of (boolean _) bool.
 test_type 7 T :-
  of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num 0)) T.
-%test_type 8 T :-
+test_type 8 T :-
  %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma) (app (app (fun somma) (decl_let x)) (decl_let y))) (decl_let z))) T.
+ of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num ((num_to_int (decl_let x)) + (num_to_int (decl_let y)) + (num_to_int (decl_let z))))) T.
 %test_type 9 T :-
  %of (let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) (boolean tt), branch (succ N) (app (decl_let odd) N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) (boolean ff), branch (succ N) (app (decl_let even) N)])] (app (decl_let even) (num 3))) T.
 
@@ -400,8 +410,8 @@ match_lista_fun [H|T] L :-
  match_lista_fun T LminusH.
 
 type search_fun implementation -> list declaration -> list declaration -> prop.
-search_fun (fun_impl N1 C) [fun_decl N2 S | TL] [fun_decl N2 S | OUT] :- search_fun (fun_impl N1 C) TL OUT.		% ~ In questo modo la lista di output LminusH viene man mano riempita funzione dopo funzione?
 search_fun (fun_impl N C) [fun_decl N S | TL] TL :- of C T, instantiate S T.		% Caso base
+search_fun (fun_impl N1 C) [fun_decl N2 S | TL] [fun_decl N2 S | OUT] :- search_fun (fun_impl N1 C) TL OUT.		% ~ In questo modo la lista di output LminusH viene man mano riempita funzione dopo funzione?
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
