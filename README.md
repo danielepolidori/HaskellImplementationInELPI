@@ -14,6 +14,8 @@
 
 - IF-THEN-ELSE come pattern matching
 
+- I vincoli di OF vanno scritti una volta sola se sono uguali
+
 
 
 ### DOMANDE:
@@ -23,7 +25,12 @@
   (Risposta: ite è pattern matching sui booleani, ite è solo zucchero sintattico; posso anche introdurla come sintassi a sé stante)
 
   % Però così sto introducendo una nuova sintassi, e soprattutto non sto facendo pattern matching
-  Idea:
+  Idea 1:
        type if_then_else bool -> term -> term -> term.
        if_then_else tt X Y :- X.
        if_then_else ff X Y :- Y.
+
+  Idea 2:
+         %   n1 \ n2 \ if n1 == n2 then 1 else 0
+         
+         n1 \ n2 \ (n1 == n2) => num 1; num 0.

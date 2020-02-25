@@ -95,7 +95,6 @@ is_fun_in_decls [fun_decl N2_ S2_ | TL] N1 S1 :- is_fun_in_decls TL N1 S1.
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
 instantiate (for_all S) O :- instantiate (S T_) O.		% ~ '(S T_)' è una funzione con un argomento in input (es: 'F x') così da avere alla fine la base istanziata? (es: S = X \ for_all Y \ base (arr X Y))
-% instantiate (for_all X_ \ S) O :- instantiate S O.	% ~ Idea mia: Se è 'for_all' semplicemente passa avanti e quando è 'base' ritorna il suo argomento
 
 % es.
 %  Term =
@@ -136,46 +135,13 @@ kind nome_costruttore_adt type.
 type adt nome_costruttore_adt -> list term -> term.
 %        nome_adt -> argomenti_in_input_al_costruttore ->.
 % es:   adt zero_ []
-% es:   adt succ [N]
+% es:   adt succ [N];  adt succ [adt succ [adt succ [adt zero_ []]]]
 % es:   adt lista_vuota []
-% es:   adt cons [H, TL]
-% es:   adt leaf [K, V]
-% es:   adt node [T, K, T]
+% es:   adt cons [H, TL];  adt cons [x, (adt cons [y, (adt cons [z, (adt lista_vuota [])])])]
+% es:   adt leaf [K, V];  adt leaf [num 3, x]
+% es:   adt node [T, K, T];  adt node [adt leaf [4, x], num 9, adt node [adt leaf [11, y], num 13, adt leaf [15, z]]
 % es:   adt none_ []
-% es:   adt some_ [A]
-
-type zero_ term.
-type succ term -> term.
-% es:   nat 0
-% es:   succ (succ (succ (nat 0)))
-type natural tipo.
-%of (nat _) natural.
-of (succ _) natural.
-
-type lista_vuota term.
-%type lista_piena list term -> term.
-type cons term -> term -> term. % prende testa e coda
-% es:   lista_vuota
-% es:   lista_piena [H|TL]
-type lista tipo.
-of lista_vuota lista.
-%of (lista_piena _) lista.
-
-type leaf int -> term -> term.	% ~ È giusto che V sia considerato di tipo 'term'?
-type node term -> int -> term -> term.
-% es:   leaf 3 x
-% es:   node (leaf 4 x) 9 (node (leaf 11 y) 13 (leaf 15 z))
-type tree tipo.
-of (leaf _ _) tree.
-of (node _ _ _) tree.
-
-type none_ term.
-type some_ term -> term.	% ~ È giusto che A sia considerato di tipo 'term'?
-% es:   none
-% es:   some x
-type option tipo.
-of none_ option.
-of (some_ _) option.
+% es:   adt some_ [A];  adt some_ [x]
 
 
 %%% Costrutto case
@@ -201,9 +167,9 @@ kind pair type.
 type case_of term -> list pair -> term.
 type dato (term -> pair) -> pair.
 type branch term -> term -> pair.
-% es:   case_of x [branch (adt zero_ []) (num 0), dato y \ branch (adt succ [y]) (num ((nat_to_num y) + 2))]
-% es:   fun_impl sum (lam x \ case_of x [branch (adt lista_vuota []) (num 0), dato y \ branch (adt cons [y, l]) (num ((num_to_int y) + (num_to_int (app (fun sum) (adt cons [l])))))])
-% es:   fun_impl search (lam k1 \ lam t \ case_of t [dato k2 \ dato v \ branch (adt leaf [k2, v]) (if k1 == k2 then (some_ v) else none_), dato t1 \ dato k2 \ dato t2 \ branch (node t1 k2 t2) (if (k1 <= k2) then (search k1 t1) else (search k1 t2))])
+% es:   case_of x [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (somma_int (nat_to_int y) (num 2))]
+% es:   fun_impl sum (lam x \ case_of x [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (somma_int y (app (fun sum) l))])
+% es:   fun_impl search (lam k1 \ lam t \ case_of t [dato k2 \ dato v \ branch (adt leaf [k2, v]) (if (k1 == k2) then (adt some_ [v]) else (adt none_ [])), dato t1 \ dato k2 \ dato t2 \ branch (adt node [t1, k2, t2]) (if (k1 <= k2) then (app (app (fun search) k1) t1) else (app (app (fun search) k1) t2))])
 
 % ~ Sistemare il case da qui in poi secondo le nuove modifiche, saltata con il prof
 
@@ -214,20 +180,54 @@ of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [] _T1 _T2.		% Caso base
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
+check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.
 
-% Test
-type assume_impl implementation -> prop.
+%% Test
+
+type zero_ nome_costruttore_adt.
+type succ_ nome_costruttore_adt.
+type natural tipo.
+of (adt zero_ []) natural.
+of (adt succ_ [X]) natural :- of X natural.
+
+type lista_vuota nome_costruttore_adt.
+type cons nome_costruttore_adt.		% Prende testa e coda
+type lista tipo.
+of (adt lista_vuota []) lista.
+of (adt cons [H, TL]) lista :- of H int, of TL lista.
+
+type leaf nome_costruttore_adt.
+type node nome_costruttore_adt.
+type tree tipo.
+of (adt leaf [K, _V]) tree :- of K int.
+of (adt node [T1, K, T2]) tree :- of T1 tree, of K int, of T2 tree.
+
+type none_ nome_costruttore_adt.
+type some_ nome_costruttore_adt.
+type option tipo.
+of (adt none_ []) option.
+of (adt some_ [_X]) option.
+
 type sum nome_fun.
-type num_to_int term -> int.
-%assume_impl (fun_impl sum (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))])).
+assume (fun_decl sum (base (arr lista int))).
+type nat_to_int term -> term.
+of (nat_to_int X) int :- of X natural.
+type somma_int term -> term -> term.
+of (somma_int X Y) int :- of X int, of Y int.
 type search nome_fun.
-%assume_impl (fun_impl search (lam k1 \ lam t \ case_of t [branch (leaf _ _) _, branch (node _ _ _) _])).
-%test_type 4 T :-
- %of (case_of _X [branch (nat 0) (num 0), branch (succ _) (num _)]) T.
-%test_type 5 T :-
- %of (lam x \ case_of x [branch lista_vuota (num 0), branch (lista_piena [H|TL]) (num ((num_to_int H) + (num_to_int (app (fun sum) (lista_piena TL)))))]) T.
-%test_type 6 T :-
- %of (lam x \ case_of x [branch (leaf _ _) (some_ _), branch (node _ _ _) none_]) T.
+assume (fun_decl search (base (arr int (arr tree option)))).
+
+%ok
+test_type 4 T :-
+ of (case_of _X [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (somma_int (nat_to_int y) (num 2))]) T.
+%ok
+test_type 5 T :-
+ of (case_of _X [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (somma_int y (app (fun sum) l))]) T.
+%ok
+% ~ Implementare con if-then-else
+test_type 6 T :-
+ of (case_of _T [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt some_ [v])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t1)]) T.	% Caso 1 dell'if-then-else
+ %of (case_of _T [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt none_ [])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t2)]) T.	% Caso 2 dell'if-then-else
 
 
 %%% Costrutto let-in
@@ -298,11 +298,13 @@ type bool tipo.
 of (boolean _) bool.
 test_type 7 T :-
  of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num 0)) T.
-test_type 8 T :-
- %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma) (app (app (fun somma) (decl_let x)) (decl_let y))) (decl_let z))) T.
- of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num ((num_to_int (decl_let x)) + (num_to_int (decl_let y)) + (num_to_int (decl_let z))))) T.
+%test_type 8 T :-
+ %%of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma) (app (app (fun somma) (decl_let x)) (decl_let y))) (decl_let z))) T.
+ %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num ((num_to_int (decl_let x)) + (num_to_int (decl_let y)) + (num_to_int (decl_let z))))) T.
 %test_type 9 T :-
  %of (let_in [coppia_decl even (lam x \ case_of x [branch (nat 0) (boolean tt), branch (succ N) (app (decl_let odd) N)]), coppia_decl odd (lam x \ case_of x [branch (nat 0) (boolean ff), branch (succ N) (app (decl_let even) N)])] (app (decl_let even) (num 3))) T.
+type num_to_int term -> term.
+of (num_to_int X) int :- of X int.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
