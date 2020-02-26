@@ -133,6 +133,8 @@ istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 
 kind nome_costruttore_adt type.
 type adt nome_costruttore_adt -> list term -> term.
+%R type constructor nome_costruttore_adt -> list term -> term.
+%R type k nome_costruttore_adt -> list term -> term.
 %        nome_adt -> argomenti_in_input_al_costruttore ->.
 % es:   adt zero_ []
 % es:   adt succ [N];  adt succ [adt succ [adt succ [adt zero_ []]]]
@@ -178,7 +180,8 @@ of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [] _T1 _T2.		% Caso base
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
-check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
+%R check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
+check_list_case [dato F | TL] T1 T2 :- pi x \ of x TX_ => check_list_case [(F x) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
 
 %% Test
 
@@ -231,7 +234,9 @@ test_type 6 T :-
  %of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt none_ [])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t2)]) T.	% Caso 2 dell'if-then-else
 
 type if_then_else bool -> term -> term -> term.
+%R type if_then_else term -> term -> term -> term.
 of (if_then_else _B X Y) T :- of X T, of Y T.
+%R of (if_then_else B X Y) T :- of B bool, of X T, of Y T.
 
 type equal_int int -> int -> bool.
 type minor_equal_int int -> int -> bool.
@@ -287,12 +292,14 @@ type check_list_let list decl -> prop -> prop.
 check_list_let [] CMD :- CMD.	% Caso base
 %%check_list_let [coppia_decl N C | TL] :- associa_tipo N S => (inverse_instantiate T S, of C T, check_list_let TL CMD).
 %check_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T => (of C T, check_list_let TL CMD).	% ~ Non funziona con even/odd
+%R check_list_let [coppia_decl N C | TL] CMD :- associa_tipo_constraint T N => (of C T => check_list_let TL CMD).
+%R fare due passate: una associa_tipo, una of, e poi infine CMD
 check_list_let [coppia_decl N C | TL] CMD :- associa_tipo_constraint T N => (of C T => check_list_let TL CMD).
 
 %type associa_tipo nome_decl -> tipo -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
 type associa_tipo_constraint tipo -> nome_decl -> prop.
-mode (associa_tipo_constraint i o).
-associa_tipo_constraint (uvar _ as X) N :- !, declare_constraint (associa_tipo_constraint X N) [].	% '[]' = Il vincolo non verrà mai risvegliato
+%R mode (associa_tipo_constraint i o).
+%R associa_tipo_constraint (uvar _ as X) N :- !, declare_constraint (associa_tipo_constraint X N) [].	% '[]' = Il vincolo non verrà mai risvegliato
 
 type decl_let nome_decl -> term.
 %of (decl_let N) T :- associa_tipo N T.
@@ -479,6 +486,8 @@ type implies holds -> schema -> schema.
 
 
 instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.
+
+%R Test
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
