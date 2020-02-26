@@ -1,0 +1,90 @@
+% Spiegazione:
+% 1. Esempio:
+%  generalize (arr (arr X Y) (arr X Z)) S.
+%  S diventa forall c0 \ forall c1 \ forall c2 \ arr (arr c1 c0) (arr c1 c2)
+%
+% 2. free_vars colleziona la lista [X,Y,Z] priva di duplicati delle
+%    variabili nel termine
+%
+% 3. la union fa l'unione senza duplicati di due liste
+%
+% 4. test_eqp è un predicato implementato con constraint + constraint handling rule
+%    che testa se due metavariabili sono uguali senza unificarle.
+%    Esempio:  test_eqp X Y non vale mentre test_eqp X X vale.
+%
+% 5. la generalize_aux mette al posto delle variabili [X,Y,Z] delle costanti
+%    quantificate con un forall
+%
+% 6. per farlo usa predicati assoc e copy in quanto
+%    pi x \ X = x
+%    non funzionerebbe perchè la X non ha la x in scope
+%
+% 7. l'ipotesi (assoc X x) ricorda che la X deve essere sostituita
+%    con la x durante la copy
+%
+% 8. la copy fa la copia ricorsiva
+
+% TODO da parte tua:
+% 1. integrare il codice esempio di questo file nel tuo in modo da generalizzare
+%    i tipi del let-in in schemi
+%
+% 2. questo codice è unsound per i let-in! Infatti generalizza tutte le variabili
+%    [X,Y,Z,...] che occorrono nei tipi. Invece deve farlo solo per le variabili
+%    che NON occorrono nel tipo delle variabili che occorrono libere nel corpo
+%    dei let-in.
+%
+% 3. Esempio:  lambda x \ let f g = g x in f
+%    - si assume che x abbia tipo A
+%    - si calcola il tipo della f che è (A -> B) -> B
+%    - si generalizza il tipo della f allo schema
+%      forall B \ (A -> B) -> B
+%      in quanto la A compare nel tipo della variabile x che
+%      compare nel corpo della g
+%      Infatti, se ci pensi, la f funziona solo quando la g
+%      prende in input il tipo della x, non per un tipo qualunque
+%
+% 4. Quindi tu devi modificare il codice per:
+%    1. andare in ricorsione sul corpo dei let-in e trovare tutte le variabili
+%       libere (= non legate da lambda o let-in)
+%    2. calcolarne il tipo
+%    3. calcolare le variabili nel tipo usando la mia funzione
+%    4. escludere tali variabili dalla lista di quelle da generalizzare
+
+generalize T S :-
+ free_vars T L,
+ generalize_aux L T S.
+
+mode (assoc i o).
+
+generalize_aux [] T S :- copy T S.
+generalize_aux [X|L] T (forall S) :-
+ pi x \ assoc X x => generalize_aux L T (S x).
+
+mode (copy i o).
+copy (uvar _ as X) Y :- assoc X' Y, test_eqp X X'.
+copy (arr T1 T2) (arr T1' T2') :-
+ copy T1 T1',
+ copy T2 T2'.
+
+mode (free_vars i o).
+free_vars (uvar _ as X) [X].
+free_vars (arr T1 T2) L :-
+ free_vars T1 L1,
+ free_vars T2 L2,
+ union L1 L2 L.
+
+union [] L2 L2.
+union [U|L1] L2 L :-
+ union L1 L2 L3,
+ ((memp U L3, !, L = L3)
+ ; L = [U|L3]).
+
+memp X [X'|_] :- test_eqp X X'.
+memp X [_|L] :- memp X L.
+
+test_eqp X X' :- declare_constraint (eqp X X') [].
+
+constraint eqp {
+ rule \ (eqp A A) <=> true.
+ rule \ (eqp A B) <=> false.
+}
