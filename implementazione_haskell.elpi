@@ -139,7 +139,7 @@ type adt nome_costruttore_adt -> list term -> term.
 % es:   adt lista_vuota []
 % es:   adt cons [H, TL];  adt cons [x, (adt cons [y, (adt cons [z, (adt lista_vuota [])])])]
 % es:   adt leaf [K, V];  adt leaf [num 3, x]
-% es:   adt node [T, K, T];  adt node [adt leaf [4, x], num 9, adt node [adt leaf [11, y], num 13, adt leaf [15, z]]
+% es:   adt node [T, K, T];  adt node [adt leaf [num 4, x], num 9, adt node [adt leaf [num 11, y], num 13, adt leaf [num 15, z]]
 % es:   adt none_ []
 % es:   adt some_ [A];  adt some_ [x]
 
@@ -174,11 +174,11 @@ type branch term -> term -> pair.
 % Il case intero ha come tipo il tipo dell'output dei singoli rami
 of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 
-% Controlla che, per ogni coppia, gli elementi di input abbiano tutti lo stesso tipo dell'input del case e gli elementi di output abbiano tutti un certo tipo
+% Controlla che, per ogni coppia, gli elementi di input abbiano tutti lo stesso tipo dell'input del case e gli elementi di output abbiano tutti un certo tipo (che sarà il tipo dell'intero case)
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [] _T1 _T2.		% Caso base
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
-check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.
+check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
 
 %% Test
 
@@ -209,7 +209,7 @@ of (adt some_ [_X]) option.
 type nat_to_int term -> term.
 of (nat_to_int X) int :- of X natural.
 
-%ok
+%-ok
 test_type 4 T :-
  of (case_of _X [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (somma_int_term (nat_to_int y) (num 2))]) T.
 
@@ -218,14 +218,14 @@ assume (fun_decl sum (base (arr lista int))).
 type somma_int_term term -> term -> term.
 of (somma_int_term X Y) int :- of X int, of Y int.
 
-%ok
+%-ok
 test_type 5 T :-
  of (case_of _X [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (somma_int_term y (app (fun sum) l))]) T.
 
 type search nome_fun.
 assume (fun_decl search (base (arr int (arr tree option)))).
 
-%ok
+%-ok
 test_type 6 T :-
  of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt some_ [v])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t1)]) T.	% Caso 1 dell'if-then-else
  %of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt none_ [])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t2)]) T.	% Caso 2 dell'if-then-else
@@ -239,8 +239,8 @@ type minor_equal_int int -> int -> bool.
 type num_to_int term -> int.
 
 % Test 6 implementato con if-then-else
-% no: il primo risultato è giusto, ma come secondo risultato trova 'T = int'
-test_type 7 T :-
+%-no (il primo risultato è giusto, ma come secondo risultato trova 'T = int')
+test_type 61 T :-
  of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (equal_int (num_to_int K1) (num_to_int k2)) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (minor_equal_int (num_to_int K1) (num_to_int k3)) (app (app (fun search) K1) t1) (app (app (fun search) K1) t2))]) T.
  %of (lam k1 \ lam t \ case_of t [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (equal_int (num_to_int k1) (num_to_int k2)) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k2 \ dato t2 \ branch (adt node [t1, k2, t2]) (if_then_else (minor_equal_int (num_to_int k1) (num_to_int k2)) (app (app (fun search) k1) t1) (app (app (fun search) k1) t2))]) T.
 
@@ -285,7 +285,7 @@ of (let_in L EXPR) T :- check_list_let L (of EXPR T).
 
 type check_list_let list decl -> prop -> prop.
 check_list_let [] CMD :- CMD.	% Caso base
-%%check_list_let [coppia_decl N C | TL] :- (associa_tipo N S, inverse_instantiate T S) => (of C T, check_list_let TL CMD).
+%%check_list_let [coppia_decl N C | TL] :- associa_tipo N S => (inverse_instantiate T S, of C T, check_list_let TL CMD).
 %check_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T => (of C T, check_list_let TL CMD).	% ~ Non funziona con even/odd
 check_list_let [coppia_decl N C | TL] CMD :- associa_tipo_constraint T N => (of C T => check_list_let TL CMD).
 
@@ -310,17 +310,13 @@ type x nome_decl.
 type y nome_decl.
 type z nome_decl.
 
-%ok
-test_type 7 T :-
- of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (num 0)) T.
-
 type somma_int_fun nome_fun.
 assume (fun_decl somma_int_fun (base (arr int (arr int int)))).
 
-%ok
-test_type 8 T :-
- of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma_int_fun) (app (app (fun somma_int_fun) (decl_let x)) (decl_let y))) (decl_let z))) T.
- %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (somma_int_term (decl_let x) (somma_int_term (decl_let y) (decl_let z)))) T.
+%-ok
+test_type 7 T :-
+ of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma_int_fun) (app (app (fun somma_int_fun) (decl_let x)) (decl_let y))) (decl_let z))) T.	% Per la somma viene usata una funzione
+ %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (somma_int_term (decl_let x) (somma_int_term (decl_let y) (decl_let z)))) T.		% Per la somma viene usato un costrutto
 
 type even nome_decl.
 type odd nome_decl.
@@ -329,11 +325,11 @@ type boolean bool -> term.
 type bool tipo.
 of (boolean _) bool.
 
-test_type 9 T :-
+test_type 8 T :-
  of (let_in [coppia_decl even (lam x \ case_of x [branch (adt zero_ []) (boolean tt), dato n \ branch (adt succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (adt zero_ []) (boolean ff), dato n \ branch (adt succ_ [n]) (app (decl_let even) n)])] (app (decl_let even) (num 3))) T.
 
-% È una prova per capire il funzionamento del test 9
-test_type 10 T :-
+% È una prova per capire il funzionamento del test 8
+test_type 9 T :-
  of (let_in [coppia_decl even (lam x \ case_of x [branch (adt zero_ []) (boolean tt), dato n \ branch (adt succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (adt zero_ []) (boolean ff), dato n \ branch (adt succ_ [n]) (app (decl_let even) n)])] (decl_let even)) T.
 
 
@@ -383,6 +379,7 @@ assume (fun_decl map (for_all s \ for_all t \ base (arr (arr s t) (arr (list s) 
 assume (fun_decl concat (base (arr (list string) string))).
 
 %% Test sui for_all
+%-ok
 type test_type int -> tipo -> prop.
 test_type 1 OUT :-
  of (lam l \ app (fun concat) (app (app (fun map) (fun print_int)) l)) OUT.
@@ -417,7 +414,9 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 
 
 %%% Test
+%-ok
 test_type 2 Z :- of (app (fun print_) (num 3)) Z.
+%-ok
 test_type 3 Z :- of (lam x \ app (fun print_) x) Z.
 
 
@@ -437,14 +436,27 @@ check_istanza (istanza N TA_ LA) :- typeclass N TB_ LB, match_lista_fun LA LB.
 
 % Controlla che ci siano funzioni con lo stesso nome e che abbiano lo stesso tipo
 type match_lista_fun list implementation -> list declaration -> prop.
+match_lista_fun [] _L.	% Caso base
 match_lista_fun [H|T] L :-
  search_fun H L LminusH,
  match_lista_fun T LminusH.
 
+% ~ Quando la funzione viene trovata, in 'LminusH' si restituisce solo la parte restante della lista e non tutta la lista meno la funzione trovata (o sbaglio?)
 type search_fun implementation -> list declaration -> list declaration -> prop.
 search_fun (fun_impl N C) [fun_decl N S | TL] TL :- of C T, instantiate S T.		% Caso base
 search_fun (fun_impl N1 C) [fun_decl N2 S | TL] [fun_decl N2 S | OUT] :- search_fun (fun_impl N1 C) TL OUT.		% ~ In questo modo la lista di output LminusH viene man mano riempita funzione dopo funzione?
- 
+
+
+%% Test
+
+type test_ int -> prop.
+
+typeclass printable T [fun_decl print_ (base (arr T string))].
+
+%-ok
+test_ 1 :-
+ check_istanza (istanza printable int [fun_impl print_ (fun print_int)]).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
