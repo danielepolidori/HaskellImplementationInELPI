@@ -281,20 +281,16 @@ of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
 % Prima passata per associare un tipo (come variabile) alla dichiarazione
 type associa_list_let list decl -> list decl -> prop -> prop.
 associa_list_let [] L CMD :- of_list_let L CMD.	% Caso base
-%associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N T_ => associa_list_let TL L CMD.
 associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_list_let TL L CMD.
 
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T, of C T, of_list_let TL CMD.
 of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
 
-%type associa_tipo nome_decl -> tipo -> prop.
 type associa_tipo nome_decl -> schema -> prop.
 
 type decl_let nome_decl -> term.
-%of (decl_let N) T :- associa_tipo N T.
 of (decl_let N) T :- associa_tipo N S, instantiate S T.
 
 % Per passare da un tipo di sole arr al rispettivo tipo forall+arr
@@ -378,12 +374,32 @@ test_type 8 T :-
 
 type test_schema int -> schema -> prop.
 
-%       --> S diventa for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2))
-%-
+%-ok (S = for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2)))
 test_schema 1 S :-
- generalize (arr (arr X _Y) (arr X _Z)) S.
+ generalize (arr (arr X Y_) (arr X Z_)) S.
 
-%test_type 11 T :-
+type f nome_decl.
+
+%-no (T = arr X0 (arr (arr X1 X2) X2)): X0 e X1 dovrebbero essere lo stesso tipo
+test_type 11 T :-
+ of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
+
+type test_type_type int -> tipo -> tipo -> prop.
+
+% Per capire il funzionamento del test 11
+%-no (A = X0, T = arr (arr X1 X2) X2): X0 e X1 dovrebbero essere lo stesso tipo
+test_type_type 1 A T :-
+ pi x \ of x A => of (let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
+
+type id nome_decl.
+
+%-ok (T = int)
+test_type 12 T :-
+ of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))) T.
+
+%-ok (T = bool)
+test_type 13 T :-
+ of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (boolean tt))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
