@@ -81,7 +81,6 @@ type fun nome_fun -> term.
 %       =
 %       print 4
 
-% ~ Va aggiunto anche 'fun_impl N C' a destra?
 of (fun N) T :- assume (fun_decl N S), instantiate S T.											% Caso 1: funzione a sé stante
 of (fun N) T :- typeclass N1 T1 L, is_fun_in_decls L N S, instantiate S T, istanza N1 T1 _.		% Caso 2: funzione che è parte di una typeclass
 % ~ È giusto che istanza e typeclass abbiano lo stesso tipo T1? Non dovrebbe essere che la typeclass ha un tipo generico e l'istanza un tipo concreto?
@@ -94,7 +93,7 @@ is_fun_in_decls [fun_decl N2_ S2_ | TL] N1 S1 :- is_fun_in_decls TL N1 S1.
 % Per passare da un tipo forall+arr al rispettivo tipo di sole arr
 type instantiate schema -> tipo -> prop.
 instantiate (base T) T.
-instantiate (for_all S) O :- instantiate (S T_) O.		% ~ '(S T_)' è una funzione con un argomento in input (es: 'F x') così da avere alla fine la base istanziata? (es: S = X \ for_all Y \ base (arr X Y))
+instantiate (for_all S) O :- instantiate (S T_) O.		% '(S T_)' è una funzione con un argomento in input (es: 'F x') così da avere alla fine la base istanziata. (es: S = X \ for_all Y \ base (arr X Y))
 
 % es.
 %  Term =
@@ -124,12 +123,6 @@ istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
 % type List A = [] | :: of A * (List A)
 % type Tree K V = Leaf of K * V | Node of (Tree K V) * V * (Tree K V)
 % type option A = None | Some of A
-
-% ~~
-% lista di costruttori con lista di tipi associati al costruttore
-% il costruttore ha un tipo
-% separa dichiarazione da occorrenza del tipo
-% termine è costruttore con un certo numero di argomenti (lista, perché diverso ogni volta)
 
 kind nome_costruttore_adt type.
 type adt nome_costruttore_adt -> list term -> term.
@@ -180,7 +173,6 @@ of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
 type check_list_case list pair -> tipo -> tipo -> prop.
 check_list_case [] _T1 _T2.		% Caso base
 check_list_case [branch A B | TL] T1 T2 :- of A T2, of B T1, check_list_case TL T1 T2.
-%R check_list_case [dato F | TL] T1 T2 :- check_list_case [(F I_) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
 check_list_case [dato F | TL] T1 T2 :- pi x \ of x TX_ => check_list_case [(F x) | TL] T1 T2.		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
 
 %% Test
@@ -209,45 +201,43 @@ type option tipo.
 of (adt none_ []) option.
 of (adt some_ [_X]) option.
 
-type nat_to_int term -> term.
-of (nat_to_int X) int :- of X natural.
+type somma_int nome_fun.
+assume (fun_decl somma_int (base (arr int (arr int int)))).
 
-%-ok
+type nat_to_int nome_fun.
+assume (fun_decl nat_to_int (base (arr natural int))).
+
+%-ok (T = int, of _X natural)
 test_type 4 T :-
- of (case_of _X [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (somma_int_term (nat_to_int y) (num 2))]) T.
+ of (case_of _X [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (app (app (fun somma_int) (app (fun nat_to_int) y)) (num 2))]) T.
 
 type sum nome_fun.
 assume (fun_decl sum (base (arr lista int))).
-type somma_int_term term -> term -> term.
-of (somma_int_term X Y) int :- of X int, of Y int.
 
-%-ok
+%-ok (T = int, of _X lista)
 test_type 5 T :-
- of (case_of _X [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (somma_int_term y (app (fun sum) l))]) T.
+ of (case_of _X [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (app (app (fun somma_int) y) (app (fun sum) l))]) T.
 
 type search nome_fun.
 assume (fun_decl search (base (arr int (arr tree option)))).
 
-%-ok
+type boolean bool -> term.
+type bool tipo.
+of (boolean _) bool.
+
+type if_then_else term -> term -> term -> term.
+% es:   if_then_else (boolean tt) (num 5) (num 8)
+of (if_then_else B X Y) T :- of B bool, of X T, of Y T.
+
+type equal_int nome_fun.
+assume (fun_decl equal_int (base (arr int (arr int bool)))).
+type minor_equal_int nome_fun.
+assume (fun_decl minor_equal_int (base (arr int (arr int bool)))).
+
+%-ok ((T = option), (T = arr int (arr tree option))
 test_type 6 T :-
- of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt some_ [v])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t1)]) T.	% Caso 1 dell'if-then-else
- %of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (adt none_ [])), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (app (app (fun search) _K1) t2)]) T.	% Caso 2 dell'if-then-else
-
-type if_then_else bool -> term -> term -> term.
-%R type if_then_else term -> term -> term -> term.
-of (if_then_else _B X Y) T :- of X T, of Y T.
-%R of (if_then_else B X Y) T :- of B bool, of X T, of Y T.
-
-type equal_int int -> int -> bool.
-type minor_equal_int int -> int -> bool.
-
-type num_to_int term -> int.
-
-% Test 6 implementato con if-then-else
-%-no (il primo risultato è giusto, ma come secondo risultato trova 'T = int')
-test_type 61 T :-
- of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (equal_int (num_to_int K1) (num_to_int k2)) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (minor_equal_int (num_to_int K1) (num_to_int k3)) (app (app (fun search) K1) t1) (app (app (fun search) K1) t2))]) T.
- %of (lam k1 \ lam t \ case_of t [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (equal_int (num_to_int k1) (num_to_int k2)) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k2 \ dato t2 \ branch (adt node [t1, k2, t2]) (if_then_else (minor_equal_int (num_to_int k1) (num_to_int k2)) (app (app (fun search) k1) t1) (app (app (fun search) k1) t2))]) T.
+ of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (app (app (fun equal_int) K1) k2) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (app (app (fun minor_equal_int) K1) k3) (app (app (fun search) K1) t1) (app (app (fun search) K1) t2))]) T.
+ %of (lam k1 \ lam t \ case_of t [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (app (app (fun equal_int) k1) k2) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (app (app (fun minor_equal_int) k1) k3) (app (app (fun search) k1) t1) (app (app (fun search) k1) t2))]) T.
 
 
 %%% Costrutto let-in
@@ -286,30 +276,22 @@ type coppia_decl nome_decl -> term -> decl.
 % es:   let_in [coppia_decl id (lam A \ A)] (id 4)
 %              cioè   [id = (lam A \ A)] (id 4)
 
-of (let_in L EXPR) T :- check_list_let L (of EXPR T).
+of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
 
-type check_list_let list decl -> prop -> prop.
-check_list_let [] CMD :- CMD.	% Caso base
-%%check_list_let [coppia_decl N C | TL] :- associa_tipo N S => (inverse_instantiate T S, of C T, check_list_let TL CMD).
-%check_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T => (of C T, check_list_let TL CMD).	% ~ Non funziona con even/odd
-%R check_list_let [coppia_decl N C | TL] CMD :- associa_tipo_constraint T N => (of C T => check_list_let TL CMD).
-%R fare due passate: una associa_tipo, una of, e poi infine CMD
-check_list_let [coppia_decl N C | TL] CMD :- associa_tipo_constraint T N => (of C T => check_list_let TL CMD).
+% Prima passata per associare un tipo (come variabile) alla dichiarazione
+type associa_list_let list decl -> list decl -> prop -> prop.
+associa_list_let [] L CMD :- of_list_let L CMD.	% Caso base
+associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N T_ => associa_list_let TL L CMD.
 
-%type associa_tipo nome_decl -> tipo -> prop.	% ~ Deve prendere in input un 'tipo' o uno 'schema'?
-type associa_tipo_constraint tipo -> nome_decl -> prop.
-%R mode (associa_tipo_constraint i o).
-%R associa_tipo_constraint (uvar _ as X) N :- !, declare_constraint (associa_tipo_constraint X N) [].	% '[]' = Il vincolo non verrà mai risvegliato
+% Seconda passata per istanziare il tipo associato alla dichiarazione
+type of_list_let list decl -> prop -> prop.
+of_list_let [] CMD :- CMD.	% Caso base
+of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N T, of C T, of_list_let TL CMD.
+
+type associa_tipo nome_decl -> tipo -> prop.
 
 type decl_let nome_decl -> term.
-%of (decl_let N) T :- associa_tipo N T.
-of (decl_let N) T :- associa_tipo_constraint T N.	% ~ Anziché controllare se sia presente un tale vincolo, ne aggiunge uno nuovo
-
-% Per passare da un tipo di sole arr al rispettivo tipo forall+arr
-type inverse_instantiate tipo -> schema -> prop.
-%inverse_instantiate (arr T1 T2) S :- [...].
-%inverse_instantiate (arr T T) S :- [...].
-%inverse_instantiate T S :- [...].
+of (decl_let N) T :- associa_tipo N T.
 
 %% Test
 
@@ -317,27 +299,16 @@ type x nome_decl.
 type y nome_decl.
 type z nome_decl.
 
-type somma_int_fun nome_fun.
-assume (fun_decl somma_int_fun (base (arr int (arr int int)))).
-
-%-ok
+%-ok (T = int)
 test_type 7 T :-
- of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma_int_fun) (app (app (fun somma_int_fun) (decl_let x)) (decl_let y))) (decl_let z))) T.	% Per la somma viene usata una funzione
- %of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (somma_int_term (decl_let x) (somma_int_term (decl_let y) (decl_let z)))) T.		% Per la somma viene usato un costrutto
+ of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma_int) (app (app (fun somma_int) (decl_let x)) (decl_let y))) (decl_let z))) T.
 
 type even nome_decl.
 type odd nome_decl.
 
-type boolean bool -> term.
-type bool tipo.
-of (boolean _) bool.
-
+%-ok (T = bool)
 test_type 8 T :-
- of (let_in [coppia_decl even (lam x \ case_of x [branch (adt zero_ []) (boolean tt), dato n \ branch (adt succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (adt zero_ []) (boolean ff), dato n \ branch (adt succ_ [n]) (app (decl_let even) n)])] (app (decl_let even) (num 3))) T.
-
-% È una prova per capire il funzionamento del test 8
-test_type 9 T :-
- of (let_in [coppia_decl even (lam x \ case_of x [branch (adt zero_ []) (boolean tt), dato n \ branch (adt succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (adt zero_ []) (boolean ff), dato n \ branch (adt succ_ [n]) (app (decl_let even) n)])] (decl_let even)) T.
+ of (let_in [coppia_decl even (lam x \ case_of x [branch (adt zero_ []) (boolean tt), dato n \ branch (adt succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (adt zero_ []) (boolean ff), dato n \ branch (adt succ_ [n]) (app (decl_let even) n)])] (app (decl_let even) (adt succ_ [adt succ_ [adt succ_ [adt zero_ []]]]))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -487,7 +458,25 @@ type implies holds -> schema -> schema.
 
 instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.
 
-%R Test
+
+%% Test
+
+% ~ È giusto che impone un vincolo per una istanza generica piuttosto che notare che una istanza specifica già esiste e che quindi può supporre i vari tipi plausibili dell'istanza?
+%   (es: capisce che deve esistere una generica 'istanza comparable X1 _' ma non riesce a dire che funziona con 'X1 = int')
+%   Non trova l'istanza esistente ma impone un vincolo per una nuova istanza.
+
+%-ok (T = arr X0 string, istanza printable X0 X1)
+test_type 9 T :-
+ instantiate (for_all t \ implies (is_instance printable t) (base (arr t string))) T.
+
+type comparable nome_classe.
+type compare nome_fun.
+type compare_int nome_fun.
+istanza comparable int [fun_impl compare (fun compare_int)].
+
+%-ok (T = arr X0 (arr X1 X2), istanza comparable X1 X3, istanza printable X0 X4)
+test_type 10 T :-
+ instantiate (for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance comparable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
