@@ -286,12 +286,70 @@ associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_l
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
-of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
+%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
+of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, print S, of_list_let TL CMD.	% ~ per debug
 
 type associa_tipo nome_decl -> schema -> prop.
 
 type decl_let nome_decl -> term.
 of (decl_let N) T :- associa_tipo N S, instantiate S T.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% Andare in ricorsione sul corpo dei let-in e trovare tutte le variabili libere (= non legate da lambda o let-in)
+
+% Sono le variabili legate nel corpo del let-in
+type bind_vars_let term -> list term -> prop.
+bind_vars_let (lam X \ T) [X].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 % Per passare da un tipo di sole arr al rispettivo tipo forall+arr
 type generalize tipo -> schema -> prop.
@@ -309,7 +367,7 @@ free_vars (arr T1 T2) L :-
  free_vars T1 L1,
  free_vars T2 L2,
  union L1 L2 L.
-%free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
 
 % Fa l'unione senza duplicati di due liste
 type union list tipo -> list tipo -> list tipo -> prop.
@@ -352,7 +410,7 @@ copy (uvar _ as X) (base Y) :- assoc X' Y, test_eqp X X'.		% Caso base 2: se tro
 copy (arr T1 T2) (base (arr T1' T2')) :-
  copy T1 (base T1'),
  copy T2 (base T2').
-%copy T (base T).												% Caso base 1: se trova un tipo istanziato (es: int, bool, ...)
+copy T (base T).												% Caso base 1: se trova un tipo istanziato (es: int, bool, ...)
 
 
 %% Test
@@ -380,7 +438,7 @@ test_schema 1 S :-
 
 type f nome_decl.
 
-%-no (T = arr X0 (arr (arr X1 X2) X2)): X0 e X1 dovrebbero essere lo stesso tipo
+%-no (T = arr X0 (arr (arr X1 X2) X2)): X0 e X1 dovrebbero essere lo stesso tipo; associato ad 'f' for_all c1 \ for_all c2 \ base (arr (arr c1 c2) c2)
 test_type 11 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
 
