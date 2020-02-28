@@ -286,8 +286,8 @@ associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_l
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
-of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, print S, of_list_let TL CMD.	% ~ per debug
+of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
+%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, print S, of_list_let TL CMD.	% ~ per debug
 
 type associa_tipo nome_decl -> schema -> prop.
 
@@ -313,45 +313,139 @@ of (decl_let N) T :- associa_tipo N S, instantiate S T.
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 % Andare in ricorsione sul corpo dei let-in e trovare tutte le variabili libere (= non legate da lambda o let-in)
 
-type free_vars_let term -> list term -> prop.
-free_vars_let C L :- free_vars_let_aux C L1, bind_vars_let C L2, minus_list_term L1 L2 L.
-%free_vars_let C L :- bind_vars_let C L1, free_vars_let_aux C L1 L.
 
-type free_vars_let_aux term -> list term -> prop.
-mode (free_vars_let_aux i o).
-free_vars_let_aux (uvar _ as X) [X].	% Caso base
-free_vars_let_aux (lam X \ T) L :- free_vars_let_aux T L.
-free_vars_let_aux (app F T) L :- free_vars_let_aux F L1, free_vars_let_aux T L2, union_list_term_univ L1 L2 L.
+% Idea 1
+
+%type free_vars_let term -> list term -> prop.
+%free_vars_let C L :- free_vars_let_aux C L1, bind_vars_let C L2, minus_list_term L1 L2 L.
+%%free_vars_let C L :- bind_vars_let C L1, free_vars_let_aux C L1 L.
+
+%type free_vars_let_aux term -> list term -> prop.
+%mode (free_vars_let_aux i o).
+%free_vars_let_aux (uvar _ as X) [X].	% Caso base
+%free_vars_let_aux (lam X \ T) L :- free_vars_let_aux T L.
+%free_vars_let_aux (app F T) L :- free_vars_let_aux F L1, free_vars_let_aux T L2, union_list_term_univ L1 L2 L.
 
 % Fa l'unione senza duplicati di due liste di termini
-type union_list_term_univ list term -> list term -> list term -> prop.
+%type union_list_term_univ list term -> list term -> list term -> prop.
 
 % Sono le variabili legate nel corpo del let-in
-type bind_vars_let term -> list term -> prop.
-bind_vars_let (lam X \ T) L :- bind_vars_let T L1, union_list_term [X] L1 L.
-bind_vars_let (app F T) L :- bind_vars_let F L1, bind_vars_let T L2, union_list_term L1 L2 L.
-bind_vars_let _ [].		% Caso base
+%type bind_vars_let term -> list term -> prop.
+%bind_vars_let (lam X \ T) L :- bind_vars_let T L1, union_list_term [X] L1 L.
+%bind_vars_let (app F T) L :- bind_vars_let F L1, bind_vars_let T L2, union_list_term L1 L2 L.
+%bind_vars_let _ [].		% Caso base
 
 % Fa l'unione di due liste di termini, eventualmente con duplicati (necessario perché ad esempio in 'lam x \ lam x \ [...]' le due 'x' sono due termini diversi anche se hanno lo stesso nome)
-type union_list_term list term -> list term -> list term -> prop.
+%type union_list_term list term -> list term -> list term -> prop.
 
 % Restituisce la prima lista senza gli elementi in comune con la seconda lista
-type minus_list_term list term -> list term -> list term -> prop.
+%type minus_list_term list term -> list term -> list term -> prop.
 %					 L1 -> L2 -> L1-L2 -> _ .
 
 
+% Idea 2
 
-
-
-
-% ----------------
-
-free_vars_let (uvar _ as X) LB [] :- is_in X LB, !.		% Se la X è presente in LB restituisce una lista vuota
-free_vars_let (uvar _ as X) LB [X].						% Altrimenti restituisce una lista contenente la X
-free_vars_let (lam X \ T) LB L :- free_vars_let T LB1 L, union_list_term [X] LB1 LB.
+type free_vars_let term -> list term -> list term -> prop.
+%                  corpo let-in -> variabili legate -> variabili libere -> _ .
+% Utilizzo:   free_vars_let C [] L.
+mode (free_vars_let i o).
+free_vars_let (uvar _ as X) LB [] :- memp_term X LB, !.		% Se la X è presente in LB restituisce una lista vuota
+free_vars_let (uvar _ as X) _ [X].							% Altrimenti restituisce una lista contenente la X
+%free_vars_let (lam X \ T) LB L :- free_vars_let T LB1 L, union_list_term [X] LB1 LB.
+free_vars_let (lam F) LB L :- pi x \ (free_vars_let (F x) LB1 L, union_list_term [x] LB1 LB).
 free_vars_let (app F T) LB L :- free_vars_let F LB1 L1, free_vars_let T LB2 L2, union_list_term_univ L1 L2 L, union_list_term LB1 LB2 LB.
+%free_vars_let T _ [T].		% T è una costante non legata
+
+% Fa l'unione senza duplicati di due liste di termini
+type union_list_term_univ list term -> list term -> list term -> prop.
+union_list_term_univ [] L2 L2.		% Caso base
+union_list_term_univ [U|L1] L2 L :-
+ union_list_term_univ L1 L2 L3,
+ ((memp_term U L3, !, L = L3)		% Se l'elemento U è contenuto nella lista L1+L2, ritorna la lista L1+L2
+ ; L = [U|L3]).						% Altrimenti se l'elemento U non è contenuto nella lista L1+L2, ritorna la lista U+L1+L2
+
+type memp_term term -> list term -> prop.
+memp_term X [X'|_] :- test_eqp_term X X'.		% Caso base
+memp_term X [_|L] :- memp_term X L.
+
+% Testa se due metavariabili sono uguali senza unificarle
+type test_eqp_term term -> term -> prop.
+test_eqp_term X X' :- declare_constraint (eqp_term X X') [].
+% es:   test_eqp_term X Y  -->  non vale
+% es:   test_eqp_term X X  -->  vale
+
+type eqp_term term -> term -> prop.
+constraint eqp_term {
+ rule \ (eqp_term A A) <=> true.
+ rule \ (eqp_term A B) <=> false.
+}
+
+% Fa l'unione di due liste di termini, eventualmente con duplicati (necessario perché ad esempio in 'lam x \ lam x \ [...]' le due 'x' sono due termini diversi anche se hanno lo stesso nome)
+type union_list_term list term -> list term -> list term -> prop.
+union_list_term [] L2 L2.		% Caso base
+union_list_term [U|L1] L2 [U|L3] :- union_list_term L1 L2 L3.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -390,7 +484,7 @@ free_vars (arr T1 T2) L :-
  union L1 L2 L.
 free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
 
-% Fa l'unione senza duplicati di due liste
+% Fa l'unione senza duplicati di due liste di tipi
 type union list tipo -> list tipo -> list tipo -> prop.
 union [] L2 L2.		% Caso base
 union [U|L1] L2 L :-
