@@ -267,7 +267,7 @@ kind decl type.
 kind nome_decl type.
 type let_in list decl -> term -> term.
 type coppia_decl nome_decl -> term -> decl.
-%				 nome -> corpo ->.
+%				 nome -> corpo -> _ .
 
 % es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))
 %              cioè   [x = 1, y = 2, z = 3] (x + y + z)
@@ -286,12 +286,14 @@ associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_l
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
-of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.
+%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, generalize T S, of_list_let TL CMD.
+of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.
 
-%type vars_in_type list term -> list tipo -> prop.
-%vars_in_type [] [].		% Caso base
+% Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
+type vars_in_type list term -> list tipo -> prop.
+vars_in_type [] [].		% Caso base
 %vars_in_type [H|TL] L :- of H T, free_vars T L1, vars_in_type TL L2, union L1 L2 L.
+vars_in_type [H|TL] L :- of H T, free_vars T [] L1, vars_in_type TL L2, union L1 L2 L.
 
 type associa_tipo nome_decl -> schema -> prop.
 
@@ -478,30 +480,45 @@ union_list_term [U|L1] L2 [U|L3] :- union_list_term L1 L2 L3.
 
 
 % Per passare da un tipo di sole arr al rispettivo tipo forall+arr
-type generalize tipo -> schema -> prop.
-generalize T S :-
- free_vars T L,
- generalize_aux L T S.
+%type generalize tipo -> schema -> prop.
+%generalize T S :-
+ %free_vars T L,
+ %generalize_aux L T S.
 % es:   generalize (arr (arr X Y) (arr X Z)) S.
 %       --> S diventa for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2))
+type generalize list tipo -> tipo -> schema -> prop.
+% Idea 1
 %generalize L T S :-
  %free_vars T L1,
  %minus_list_tipo L1 L L1minusL,
  %generalize_aux L1minusL T S.
+% Idea 2
+generalize Lnot T S :-
+ free_vars T Lnot L1,
+ generalize_aux L1 T S.
 
 % ~ Non funziona in tutti i casi (es:   minus_list_tipo [] [int,bool] [string].)
 %minus_list_tipo [] _ _.		% Caso base
 %minus_list_tipo [H|TL] L L1 :- union [H] L1 L1plusH, ((memp H L, !, L2 = L1); L2 = L1plusH), minus_list_tipo TL L L2.
 
 % Colleziona la lista (es: [X,Y,Z]) priva di duplicati delle variabili nel termine
-type free_vars tipo -> list tipo -> prop.
-mode (free_vars i o).
-free_vars (uvar _ as X) [X].	% Caso base 2: se trova un tipo non istanziato (una variabile) allora restituisce una lista contenente tale variabile
-free_vars (arr T1 T2) L :-
- free_vars T1 L1,
- free_vars T2 L2,
+%type free_vars tipo -> list tipo -> prop.
+%mode (free_vars i o).
+%free_vars (uvar _ as X) [X].	% Caso base 2: se trova un tipo non istanziato (una variabile) allora restituisce una lista contenente tale variabile
+%free_vars (arr T1 T2) L :-
+ %free_vars T1 L1,
+ %free_vars T2 L2,
+ %union L1 L2 L.
+%free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+type free_vars tipo -> list tipo -> list tipo -> prop.
+mode (free_vars i i o).
+free_vars (uvar _ as X) L [] :- memp X L, !.
+free_vars (uvar _ as X) _ [X].
+free_vars (arr T1 T2) Lnot L :-
+ free_vars T1 Lnot L1,
+ free_vars T2 Lnot L2,
  union L1 L2 L.
-free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+free_vars _T _ [].
 
 % Fa l'unione senza duplicati di due liste di tipi
 type union list tipo -> list tipo -> list tipo -> prop.
@@ -568,7 +585,8 @@ type test_schema int -> schema -> prop.
 
 %-ok (S = for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2)))
 test_schema 1 S :-
- generalize (arr (arr X Y_) (arr X Z_)) S.
+ %generalize (arr (arr X Y_) (arr X Z_)) S.
+ generalize [] (arr (arr X Y_) (arr X Z_)) S.
 
 type f nome_decl.
 
