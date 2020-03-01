@@ -208,14 +208,14 @@ assume (fun_decl somma_int (base (arr int (arr int int)))).
 type nat_to_int nome_fun.
 assume (fun_decl nat_to_int (base (arr natural int))).
 
-%-ok (T = int, of _X natural)
+%-OK (T = int, of _X natural)
 test_type 4 T :-
  of (case_of _X [branch (adt zero_ []) (num 0), dato y \ branch (adt succ_ [y]) (app (app (fun somma_int) (app (fun nat_to_int) y)) (num 2))]) T.
 
 type sum nome_fun.
 assume (fun_decl sum (base (arr lista int))).
 
-%-ok (T = int, of _X lista)
+%-OK (T = int, of _X lista)
 test_type 5 T :-
  of (case_of _X [branch (adt lista_vuota []) (num 0), dato y \ dato l \ branch (adt cons [y, l]) (app (app (fun somma_int) y) (app (fun sum) l))]) T.
 
@@ -235,7 +235,7 @@ assume (fun_decl equal_int (base (arr int (arr int bool)))).
 type minor_equal_int nome_fun.
 assume (fun_decl minor_equal_int (base (arr int (arr int bool)))).
 
-%-ok ((T = option), (T = arr int (arr tree option))
+%-OK ((T = option), (T = arr int (arr tree option))
 test_type 6 T :-
  of (case_of _X [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (app (app (fun equal_int) K1) k2) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (app (app (fun minor_equal_int) K1) k3) (app (app (fun search) K1) t1) (app (app (fun search) K1) t2))]) T.
  %of (lam k1 \ lam t \ case_of t [(dato k2 \ dato v \ branch (adt leaf [k2, v]) (if_then_else (app (app (fun equal_int) k1) k2) (adt some_ [v]) (adt none_ []))), dato t1 \ dato k3 \ dato t2 \ branch (adt node [t1, k3, t2]) (if_then_else (app (app (fun minor_equal_int) k1) k3) (app (app (fun search) k1) t1) (app (app (fun search) k1) t2))]) T.
@@ -288,20 +288,21 @@ associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_l
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
 of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.
+%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, print (associa_tipo N S), of_list_let TL CMD.	% ~ debug (per sapere lo schema associato ad una dichiarazione)
 %of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, print (T), free_vars_let C [] L, print (free_vars_let C [] L), vars_in_type L L1, print (vars_in_type L L1), generalize L1 T S, print (generalize L1 T S), print (associa_tipo N S), of_list_let TL CMD.		% ~ debug
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
 %                 variabili di termini -> variabili di tipo -> _ .
 vars_in_type [] [].		% Caso base
-vars_in_type [H|TL] L :- of H T, free_vars T [] L1, vars_in_type TL L2, union L1 L2 L.
+vars_in_type [H|TL] L :- of H T, free_vars T [] L1, vars_in_type TL L2, union_list_tipo L1 L2 L.
 
 type associa_tipo nome_decl -> schema -> prop.
 
 type decl_let nome_decl -> term.
 of (decl_let N) T :- associa_tipo N S, instantiate S T.
 
-% Trova tutte le variabili libere (= non legate da lambda o let-in)
+% Trova tutte le variabili libere (= non legate da lambda o let-in) presenti nel termine in input
 type free_vars_let term -> list term -> list term -> prop.
 %                  corpo let-in -> variabili legate -> variabili libere -> _ .
 % Utilizzo:   free_vars_let C [] L.
@@ -364,85 +365,55 @@ type union_list_term list term -> list term -> list term -> prop.
 union_list_term [] L2 L2.		% Caso base
 union_list_term [U|L1] L2 [U|L1plusL2] :- union_list_term L1 L2 L1plusL2.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 % Per passare da un tipo di sole arr al rispettivo tipo forall+arr (escludendo alcune variabili di tipo dalla lista di quelle da generalizzare)
 type generalize list tipo -> tipo -> schema -> prop.
 %               variabili da escludere -> tipo -> schema -> _ .
 % es:   generalize [] (arr (arr X Y) (arr X Z)) S.
 %       --> S diventa for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2))
 generalize Lnot T S :-
- free_vars T Lnot L,
- generalize_aux L T S.
+ free_vars T Lnot L1,
+ generalize_aux L1 T S.
 
-% ~ Non funziona in tutti i casi (es:   minus_list_tipo [] [int,bool] [string].)
-%minus_list_tipo [] _ _.		% Caso base
-%minus_list_tipo [H|TL] L L1 :- union [H] L1 L1plusH, ((memp H L, !, L2 = L1); L2 = L1plusH), minus_list_tipo TL L L2.
-
-% Colleziona la lista (es: [X,Y,Z]) priva di duplicati delle variabili nel termine
-%type free_vars tipo -> list tipo -> prop.
-%mode (free_vars i o).
-%free_vars (uvar _ as X) [X].	% Caso base 2: se trova un tipo non istanziato (una variabile) allora restituisce una lista contenente tale variabile
-%free_vars (arr T1 T2) L :-
- %free_vars T1 L1,
- %free_vars T2 L2,
- %union L1 L2 L.
-%free_vars _T [].				% Caso base 1: se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+% Colleziona la lista (es: [X,Y,Z]) priva di duplicati delle variabili nel tipo in input (escludendo quelle presenti nella lista in input)
 type free_vars tipo -> list tipo -> list tipo -> prop.
+%              tipo -> variabili da escludere -> variabili libere -> _ .
 mode (free_vars i i o).
-free_vars (uvar _ as X) L [] :- memp X L, !.
-free_vars (uvar _ as X) _ [X].
+free_vars (uvar _ as X) L [] :- memp_tipo X L, !.	% Caso base 2: Se la X (un tipo non istanziato: una variabile) è presente in L restituisce una lista vuota
+free_vars (uvar _ as X) _ [X].					% Altrimenti restituisce una lista contenente la X
 free_vars (arr T1 T2) Lnot L :-
  free_vars T1 Lnot L1,
  free_vars T2 Lnot L2,
- union L1 L2 L.
-free_vars _T _ [].
+ union_list_tipo L1 L2 L.
+free_vars _T _ [].								% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
 
-% Fa l'unione senza duplicati di due liste di tipi
-type union list tipo -> list tipo -> list tipo -> prop.
-union [] L2 L2.		% Caso base
-union [U|L1] L2 L :-
- union L1 L2 L3,
- ((memp U L3, !, L = L3)	% Se l'elemento U è contenuto nella lista L1+L2, ritorna la lista L1+L2
- ; L = [U|L3]).				% Altrimenti se l'elemento U non è contenuto nella lista L1+L2, ritorna la lista U+L1+L2
+% Fa l'unione (senza duplicati) di due liste di tipi
+type union_list_tipo list tipo -> list tipo -> list tipo -> prop.
+union_list_tipo [] L2 L2.		% Caso base
+union_list_tipo [U|L1] L2 L :-
+ union_list_tipo L1 L2 L1plusL2,
+ ((memp_tipo U L1plusL2, !, L = L1plusL2)		% Se l'elemento U è contenuto nella lista L1+L2, ritorna la lista L1+L2
+ ; L = [U|L1plusL2]).							% Altrimenti se l'elemento U non è contenuto nella lista L1+L2, ritorna la lista U+L1+L2
 
-type memp tipo -> list tipo -> prop.
-memp X [X'|_] :- test_eqp X X'.		% Caso base
-memp X [_|L] :- memp X L.
+% Cerca un tipo in una lista di tipi, fallisce se non lo trova
+type memp_tipo tipo -> list tipo -> prop.
+memp_tipo X [X'|_] :- test_eqp_tipo X X'.		% Caso base
+memp_tipo X [_|L] :- memp_tipo X L.
 
 % Testa se due metavariabili sono uguali senza unificarle
-type test_eqp tipo -> tipo -> prop.
-test_eqp X X' :- declare_constraint (eqp X X') [].
-% es:   test_eqp X Y  -->  non vale
-% es:   test_eqp X X  -->  vale
+type test_eqp_tipo tipo -> tipo -> prop.
+test_eqp_tipo X X' :- declare_constraint (eqp_tipo X X') [].
+% es:   test_eqp_tipo X Y  -->  non vale
+% es:   test_eqp_tipo X X  -->  vale
 
-type eqp tipo -> tipo -> prop.
-constraint eqp {
- rule \ (eqp A A) <=> true.
- rule \ (eqp A B) <=> false.
+type eqp_tipo tipo -> tipo -> prop.
+constraint eqp_tipo {
+ rule \ (eqp_tipo A A) <=> true.	% Tolgo quel vincolo
+ rule \ (eqp_tipo A B) <=> false.	% Non tolgo quel vincolo
 }
 
 % Mette al posto delle variabili (es: [X,Y,Z]) delle costanti quantificate con un forall
 type generalize_aux list tipo -> tipo -> schema -> prop.
+%                   variabili -> tipo -> schema -> _ .
 generalize_aux [] T S :- copy T S.		% Caso base
 generalize_aux [X|L] T (for_all S) :-
  pi x \ assoc X x => generalize_aux L T (S x).
@@ -454,11 +425,11 @@ mode (assoc i o).
 % Fa la copia ricorsiva
 type copy tipo -> schema -> prop.
 mode (copy i o).
-copy (uvar _ as X) (base Y) :- assoc X' Y, test_eqp X X'.		% Caso base 2: se trova un tipo non istanziato (una variabile)
+copy (uvar _ as X) (base Y) :- assoc X' Y, test_eqp_tipo X X'.		% Caso base 2: Se trova un tipo non istanziato (una variabile)
 copy (arr T1 T2) (base (arr T1' T2')) :-
  copy T1 (base T1'),
  copy T2 (base T2').
-copy T (base T).												% Caso base 1: se trova un tipo istanziato (es: int, bool, ...)
+copy T (base T).													% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...)
 
 
 %% Test
@@ -482,12 +453,11 @@ type test_schema int -> schema -> prop.
 
 %-OK (S = for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2)))
 test_schema 1 S :-
- %generalize (arr (arr X Y_) (arr X Z_)) S.
  generalize [] (arr (arr X Y_) (arr X Z_)) S.
 
 type f nome_decl.
 
-%-OK (T = arr X2 (arr (arr X2 X3) X3)) con associa_tipo f (for_all c1 \ base (arr (arr X2 c1) c1))
+%-OK (T = arr X2 (arr (arr X2 X3) X3))  con  associa_tipo f (for_all c1 \ base (arr (arr X2 c1) c1))
 test_type 11 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
 
@@ -500,6 +470,19 @@ test_type 12 T :-
 %-OK (T = bool)
 test_type 13 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (boolean tt))) T.
+
+%-OK (T = arr X0 (arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) c2)))
+test_type 14 T :-
+ of (lam x \ lam y \ let_in [coppia_decl f (lam g \ if_then_else (boolean ff) (app g x) (app g y))] (decl_let f)) T.
+
+%-OK (T = arr X0 (arr X1 (arr (arr X0 X2) (arr (arr X1 X2) X2)))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) (arr (arr X1 c2) c2))))
+test_type 15 T :-
+ of (lam x \ lam y \ let_in [coppia_decl f (lam g \ lam h \ if_then_else (boolean ff) (app g x) (app h y))] (decl_let f)) T.
+
+% La 'f' deve avere il tipo:  (A -> (B -> C)) -> (B -> C)  con  of x A
+%-OK (T = arr X0 (arr (arr X0 (arr X1 X2)) (arr X1 X2))  con  associa_tipo f (for_all c1 \ for_all c2 \ base (arr (arr X0 (arr c1 c2)) (arr c1 c2))))
+test_type 16 T :-
+ of (lam x \ let_in [coppia_decl f (lam g \ lam y \ app (app g x) y)] (decl_let f)) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -548,7 +531,7 @@ assume (fun_decl map (for_all s \ for_all t \ base (arr (arr s t) (arr (list s) 
 assume (fun_decl concat (base (arr (list string) string))).
 
 %% Test sui for_all
-%-ok (OUT = arr (list int) string)
+%-OK (OUT = arr (list int) string)
 type test_type int -> tipo -> prop.
 test_type 1 OUT :-
  of (lam l \ app (fun concat) (app (app (fun map) (fun print_int)) l)) OUT.
@@ -583,9 +566,9 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 
 
 %%% Test
-%-ok (Z = string)
+%-OK (Z = string)
 test_type 2 Z :- of (app (fun print_) (num 3)) Z.
-%-ok (Z = arr X0 string, istanza printable X0 _)
+%-OK (Z = arr X0 string, istanza printable X0 _)
 test_type 3 Z :- of (lam x \ app (fun print_) x) Z.
 
 
@@ -622,7 +605,7 @@ type test_ int -> prop.
 
 typeclass printable T [fun_decl print_ (base (arr T string))].
 
-%-ok
+%-OK
 test_ 1 :-
  check_istanza (istanza printable int [fun_impl print_ (fun print_int)]).
 
@@ -656,7 +639,7 @@ instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.
 %   (es: capisce che deve esistere una generica 'istanza comparable X1 _' ma non riesce a dire che funziona con 'X1 = int')
 %   Non trova l'istanza esistente ma impone un vincolo per una nuova istanza.
 
-%-ok (T = arr X0 string, istanza printable X0 X1)
+%-OK (T = arr X0 string, istanza printable X0 X1)
 test_type 9 T :-
  instantiate (for_all t \ implies (is_instance printable t) (base (arr t string))) T.
 
@@ -665,7 +648,7 @@ type compare nome_fun.
 type compare_int nome_fun.
 istanza comparable int [fun_impl compare (fun compare_int)].
 
-%-ok (T = arr X0 (arr X1 X2), istanza comparable X1 X3, istanza printable X0 X4)
+%-OK (T = arr X0 (arr X1 X2), istanza comparable X1 X3, istanza printable X0 X4)
 test_type 10 T :-
  instantiate (for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance comparable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))) T.
 
