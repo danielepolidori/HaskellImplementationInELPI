@@ -268,6 +268,8 @@ kind decl type.
 kind nome_decl type.
 type let_in list decl -> term -> term.
 type coppia_decl nome_decl -> term -> decl.
+%R type coppia_decl (term -> term) -> decl.		% In teoria sarebbe dovuto essere così
+%R Per via della mutuaricorsione per mantenere la sintassi ho usato una presentazione al primo ordine (cioè non ho usato funzioni). L'ho rappresentata al primo ordine
 %				 nome -> corpo -> _ .
 
 % es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))
@@ -287,9 +289,11 @@ associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_l
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 type of_list_let list decl -> prop -> prop.
 of_list_let [] CMD :- CMD.	% Caso base
-of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.
+of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.		%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all')
 %of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, print (associa_tipo N S), of_list_let TL CMD.	% ~ debug (per sapere lo schema associato ad una dichiarazione)
 %of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, print (T), free_vars_let C [] L, print (free_vars_let C [] L), vars_in_type L L1, print (vars_in_type L L1), generalize L1 T S, print (generalize L1 T S), print (associa_tipo N S), of_list_let TL CMD.		% ~ debug
+%R in output serie di associatopobase (con 'and': A, B, C, ...) e poi nella terza passata assumo questa serie di and e generalizzo
+%R Recupera anche l'eventuale vincolo della typeclass
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
@@ -303,23 +307,26 @@ type decl_let nome_decl -> term.
 of (decl_let N) T :- associa_tipo N S, instantiate S T.
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) presenti nel termine in input
-type free_vars_let term -> list term -> list term -> prop.
+type free_vars_let term -> list term -> list term -> prop.		%R LB non serve usarla
 %                  corpo let-in -> variabili legate -> variabili libere -> _ .
 % Utilizzo:   free_vars_let C [] L.
 mode (free_vars_let i o o).
-free_vars_let (uvar _ as X) LB [] :- memp_term X LB, !.		% Se la X è presente in LB restituisce una lista vuota
-free_vars_let (uvar _ as X) _ [X].							% Altrimenti restituisce una lista contenente la X
+%R Nei programmi non ci saranno mai variabili (vorrebbe dire che stai tipando un programma di cui manca una parte)
+%Rfree_vars_let (uvar _ as X) LB [] :- memp_term X LB, !.		% Se la X è presente in LB restituisce una lista vuota
+%Rfree_vars_let (uvar _ as X) _ [X].							% Altrimenti restituisce una lista contenente la X
 free_vars_let (lam F) LB L :- union_list_term [X] LB LBplusX, free_vars_let (F X) LBplusX L.
+%R free_vars_let (lam F) LB L :- pi x \ union_list_term [x] LB LBplusX, free_vars_let (F x) LBplusX L.	%R 'pi x' restituisce una costante
+%R free:vars_let x [] :- !.
 free_vars_let (app F T) LB L :- free_vars_let F LB L1, free_vars_let T LB L2, union_list_term_univ L1 L2 L.
 free_vars_let (fun _) _ [].
-free_vars_let (adt _ _) _ [].
+free_vars_let (adt _ _) _ [].	%R andare in ricorsione sugli argomenti
 free_vars_let (case_of X LC) LB L :- free_vars_let X LB L1, free_vars_let_aux_case LC LB L2, union_list_term_univ L1 L2 L.
 free_vars_let (boolean _) _ [].
 free_vars_let (if_then_else B X Y) LB L1plusL2plusL3 :- free_vars_let B LB L1, free_vars_let X LB L2, free_vars_let Y LB L3, union_list_term_univ L1 L2 L1plusL2, union_list_term_univ L1plusL2 L3 L1plusL2plusL3.
 free_vars_let (let_in LC T) LB L :- free_vars_let_aux_let LC LB L1, free_vars_let T LB L2, union_list_term_univ L1 L2 L.
 free_vars_let (decl_let _) _ [].
 free_vars_let (num _) _ [].
-free_vars_let T LB [] :- memp_term T LB, !.		% Se la T (una costante non legata) è presente in LB restituisce una lista vuota
+%Rfree_vars_let T LB [] :- memp_term T LB, !.		% Se la T (una costante non legata) è presente in LB restituisce una lista vuota
 free_vars_let T _ [T].							% Altrimenti restituisce una lista contenente la T (una costante non legata)
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) nei rami del case
@@ -354,6 +361,8 @@ test_eqp_term X X' :- declare_constraint (eqp_term X X') [].
 % es:   test_eqp_term X Y  -->  non vale
 % es:   test_eqp_term X X  -->  vale
 
+%R Osservi senza istanziare, dal metalivello
+%R Non fa backtraking, se scarta la prima (true) non va alla seconda (false)
 type eqp_term term -> term -> prop.
 constraint eqp_term {
  rule \ (eqp_term A A) <=> true.	% Tolgo quel vincolo
@@ -466,6 +475,7 @@ type id nome_decl.
 %-OK (T = int)
 test_type 12 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))) T.
+ %R app id id  e poi  app id 4
 
 %-OK (T = bool)
 test_type 13 T :-
@@ -483,6 +493,9 @@ test_type 15 T :-
 %-OK (T = arr X0 (arr (arr X0 (arr X1 X2)) (arr X1 X2))  con  associa_tipo f (for_all c1 \ for_all c2 \ base (arr (arr X0 (arr c1 c2)) (arr c1 c2))))
 test_type 16 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ lam y \ app (app g x) y)] (decl_let f)) T.
+
+%R Funzioni mutue:  f chiama g, e g chiama f
+%R f chiama g  e  g chiama 2: scopri che la f è monomorfa sugli interi solo dalla g (se guardi soltanto la f pensi che sia polimorfa)
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
