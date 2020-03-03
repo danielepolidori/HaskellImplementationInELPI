@@ -4,6 +4,10 @@
 
 ### DA FARE:
 
+- Risolvi problema INSTANTIATE con implies (deve cercare il vincolo istanza)
+
+- Eseguire ciò che è scritto in test2.elpi
+
 - Devo RINOMINARE 'adt' in 'costruttore' oppure 'k' anche se non separo dichiarazione e occorrenza degli adt?
 
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
