@@ -268,8 +268,6 @@ kind decl type.
 kind nome_decl type.
 type let_in list decl -> term -> term.
 type coppia_decl nome_decl -> term -> decl.
-%R type coppia_decl (term -> term) -> decl.		% In teoria sarebbe dovuto essere così
-%R Per via della mutuaricorsione per mantenere la sintassi ho usato una presentazione al primo ordine (cioè non ho usato funzioni). L'ho rappresentata al primo ordine
 %				 nome -> corpo -> _ .
 
 % es:   let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (app (fun somma) (decl_let x)) (decl_let y)) (decl_let z))
@@ -279,21 +277,35 @@ type coppia_decl nome_decl -> term -> decl.
 % es:   let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))
 %              cioè   [id = (lam A \ A)] (id 4)
 
-of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
+%of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
+of (let_in L EXPR) T :- associa_list_let L L L (of EXPR T).
 
 % Prima passata per associare un tipo (come variabile) alla dichiarazione
-type associa_list_let list decl -> list decl -> prop -> prop.
-associa_list_let [] L CMD :- of_list_let L CMD.	% Caso base
-associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_list_let TL L CMD.
+%type associa_list_let list decl -> list decl -> prop -> prop.
+%associa_list_let [] L CMD :- of_list_let L CMD.	% Caso base
+%associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_list_let TL L CMD.
+type associa_list_let list decl -> list decl -> list decl -> prop -> prop.
+associa_list_let [] L L CMD :- of_list_let L L CMD.		% Caso base
+associa_list_let [coppia_decl N _C | TL] L L CMD :- associa_tipo N S_ => associa_list_let TL L L CMD.
 
 % Seconda passata per istanziare il tipo associato alla dichiarazione
-type of_list_let list decl -> prop -> prop.
-of_list_let [] CMD :- CMD.	% Caso base
-of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.		%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
+%type of_list_let list decl -> prop -> prop.
+%of_list_let [] CMD :- CMD.	% Caso base
+%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.		%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
 %of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, print (associa_tipo N S), of_list_let TL CMD.	% ~ debug (per sapere lo schema associato ad una dichiarazione)
 %of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, print (T), free_vars_let C [] L, print (free_vars_let C [] L), vars_in_type L L1, print (vars_in_type L L1), generalize L1 T S, print (generalize L1 T S), print (associa_tipo N S), of_list_let TL CMD.		% ~ debug
+
 %R In output serie di associa_tipo 'base' (con 'and': associa_tipo N1 S1, associa_tipo N2 S2, associa_tipo N3 S3, ...) e poi nella terza passata assumo ('=>') questa serie di and e generalizzo
 %R Recupera anche l'eventuale vincolo della typeclass
+type of_list_let list decl -> list decl -> prop -> prop -> prop.
+%%%of_list_let [] L OUT CMD :- OUT => generalize_list_let L CMD.	% Caso base
+of_list_let [coppia_decl N C | TL] L OUT CMD :- of C T, of_list_let TL L (OUT, associa_tipo N (base T)) CMD.
+
+% Terza passata
+type generalize_list_let 
+generalize_list_let [] CMD :- CMD.
+generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL CMD.
+%%%generalize_list_let [coppia_decl N C | TL] OUT CMD :- OUT => (associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL [] CMD).
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
@@ -362,12 +374,12 @@ test_eqp_term X X' :- declare_constraint (eqp_term X X') [].
 % es:   test_eqp_term X Y  -->  non vale
 % es:   test_eqp_term X X  -->  vale
 
-%R Osservi senza istanziare, dal metalivello
-%R Non fa backtracking, se scarta la prima (true) non va alla seconda (false)
+% Osservi senza istanziare, dal metalivello.
+% Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
 type eqp_term term -> term -> prop.
 constraint eqp_term {
- rule \ (eqp_term A A) <=> true.	% Tolgo quel vincolo
- rule \ (eqp_term A B) <=> false.	% Non tolgo quel vincolo
+ rule \ (eqp_term A A) <=> true.	% Tolgo quel vincolo e aggiungo 'true' (viene messo al posto del vincolo)
+ rule \ (eqp_term A B) <=> false.	% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
 }
 
 % Fa l'unione di due liste di termini, eventualmente con duplicati (necessario perché ad esempio in 'lam x \ lam x \ [...]' le due 'x' sono due termini diversi anche se hanno lo stesso nome)
@@ -389,12 +401,12 @@ type free_vars tipo -> list tipo -> list tipo -> prop.
 %              tipo -> variabili da escludere -> variabili libere -> _ .
 mode (free_vars i i o).
 free_vars (uvar _ as X) L [] :- memp_tipo X L, !.	% Caso base 2: Se la X (un tipo non istanziato: una variabile) è presente in L restituisce una lista vuota
-free_vars (uvar _ as X) _ [X].					% Altrimenti restituisce una lista contenente la X
+free_vars (uvar _ as X) _ [X].						% Altrimenti restituisce una lista contenente la X
 free_vars (arr T1 T2) Lnot L :-
  free_vars T1 Lnot L1,
  free_vars T2 Lnot L2,
  union_list_tipo L1 L2 L.
-free_vars _T _ [].								% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+free_vars _T _ [].									% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
 
 % Fa l'unione (senza duplicati) di due liste di tipi
 type union_list_tipo list tipo -> list tipo -> list tipo -> prop.
@@ -415,10 +427,12 @@ test_eqp_tipo X X' :- declare_constraint (eqp_tipo X X') [].
 % es:   test_eqp_tipo X Y  -->  non vale
 % es:   test_eqp_tipo X X  -->  vale
 
+% Osservi senza istanziare, dal metalivello.
+% Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
 type eqp_tipo tipo -> tipo -> prop.
 constraint eqp_tipo {
- rule \ (eqp_tipo A A) <=> true.	% Tolgo quel vincolo
- rule \ (eqp_tipo A B) <=> false.	% Non tolgo quel vincolo
+ rule \ (eqp_tipo A A) <=> true.	% Tolgo quel vincolo e aggiungo 'true' (viene messo al posto del vincolo)
+ rule \ (eqp_tipo A B) <=> false.	% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
 }
 
 % Mette al posto delle variabili (es: [X,Y,Z]) delle costanti quantificate con un forall
