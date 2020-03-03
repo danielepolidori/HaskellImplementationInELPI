@@ -277,35 +277,30 @@ type coppia_decl nome_decl -> term -> decl.
 % es:   let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))
 %              cioè   [id = (lam A \ A)] (id 4)
 
-%of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
-of (let_in L EXPR) T :- associa_list_let L L L (of EXPR T).
+of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
 
 % Prima passata per associare un tipo (come variabile) alla dichiarazione
-%type associa_list_let list decl -> list decl -> prop -> prop.
-%associa_list_let [] L CMD :- of_list_let L CMD.	% Caso base
-%associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_list_let TL L CMD.
-type associa_list_let list decl -> list decl -> list decl -> prop -> prop.
-associa_list_let [] L L CMD :- of_list_let L L CMD.		% Caso base
-associa_list_let [coppia_decl N _C | TL] L L CMD :- associa_tipo N S_ => associa_list_let TL L L CMD.
+type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
+associa_list_let [] L CMD :- of_list_let L L CMD.		% Caso base
+associa_list_let [coppia_decl N _C | TL] L CMD :- associa_tipo N S_ => associa_list_let TL L CMD.
 
 % Seconda passata per istanziare il tipo associato alla dichiarazione
-%type of_list_let list decl -> prop -> prop.
-%of_list_let [] CMD :- CMD.	% Caso base
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, of_list_let TL CMD.		%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C [] L, vars_in_type L L1, generalize L1 T S, print (associa_tipo N S), of_list_let TL CMD.	% ~ debug (per sapere lo schema associato ad una dichiarazione)
-%of_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, print (T), free_vars_let C [] L, print (free_vars_let C [] L), vars_in_type L L1, print (vars_in_type L L1), generalize L1 T S, print (generalize L1 T S), print (associa_tipo N S), of_list_let TL CMD.		% ~ debug
-
+%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
 %R In output serie di associa_tipo 'base' (con 'and': associa_tipo N1 S1, associa_tipo N2 S2, associa_tipo N3 S3, ...) e poi nella terza passata assumo ('=>') questa serie di and e generalizzo
 %R Recupera anche l'eventuale vincolo della typeclass
-type of_list_let list decl -> list decl -> prop -> prop -> prop.
-%%%of_list_let [] L OUT CMD :- OUT => generalize_list_let L CMD.	% Caso base
-of_list_let [coppia_decl N C | TL] L OUT CMD :- of C T, of_list_let TL L (OUT, associa_tipo N (base T)) CMD.
+type of_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
+of_list_let [] L CMD :- generalize_list_let L CMD.	% Caso base
+of_list_let [coppia_decl N C | TL] L CMD :- associa_tipo_aux N T => (of C T, of_list_let TL L CMD).
+%of_list_let [] L OUT CMD :- OUT => generalize_list_let L CMD.	% Caso base		% ~ idea 1
+%of_list_let [coppia_decl N C | TL] L OUT CMD :- of C T, of_list_let TL L (OUT, associa_tipo N (base T)) CMD.	% ~ idea 1
 
-% Terza passata
-type generalize_list_let 
+% Terza passata per generalizzare il tipo associato alla dichiarazione
+type generalize_list_let list decl -> prop -> prop.
 generalize_list_let [] CMD :- CMD.
-generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL CMD.
-%%%generalize_list_let [coppia_decl N C | TL] OUT CMD :- OUT => (associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL [] CMD).
+generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, associa_tipo_aux N T, free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL CMD.
+%generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, associa_tipo_aux N T, free_vars_let C L, vars_in_type L L', generalize L' T S, print (associa_tipo N S), generalize_list_let TL CMD.	% ~ debug (per sapere lo schema associato ad una dichiarazione)
+%generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, associa_tipo_aux N T, print (associa_tipo_aux N T), free_vars_let C L, print (free_vars_let C L), vars_in_type L L', print (vars_in_type L L'), generalize L' T S, print (generalize L' T S), print (associa_tipo N S), generalize_list_let TL CMD.		% ~ debug
+%generalize_list_let [coppia_decl N C | TL] OUT CMD :- OUT => (associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL [] CMD).	% ~ idea 2
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
@@ -314,46 +309,45 @@ vars_in_type [] [].		% Caso base
 vars_in_type [H|TL] L :- of H T, free_vars T [] L1, vars_in_type TL L2, union_list_tipo L1 L2 L.
 
 type associa_tipo nome_decl -> schema -> prop.
+type associa_tipo_aux nome_decl -> tipo -> prop.
 
 type decl_let nome_decl -> term.
 of (decl_let N) T :- associa_tipo N S, instantiate S T.
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) presenti nel termine in input
-type free_vars_let term -> list term -> list term -> prop.		%R LB non serve usarla
-%                  corpo let-in -> variabili legate -> variabili libere -> _ .
-% Utilizzo:   free_vars_let C [] L.
-mode (free_vars_let i o o).
-%R Nei programmi non ci saranno mai variabili (vorrebbe dire che stai tipando un programma di cui manca una parte). Solo i tipi possono contenere variabili
-%Rfree_vars_let (uvar _ as X) LB [] :- memp_term X LB, !.		% Se la X è presente in LB restituisce una lista vuota
-%Rfree_vars_let (uvar _ as X) _ [X].							% Altrimenti restituisce una lista contenente la X
-free_vars_let (lam F) LB L :- union_list_term [X] LB LBplusX, free_vars_let (F X) LBplusX L.
-%R free_vars_let (lam F) LB L :- pi x \ union_list_term [x] LB LBplusX, free_vars_let (F x) LBplusX L.	%R 'pi x' restituisce una costante
-%R Assumo 'free_vars_let x []' per ogni 'lam x' che incontro (free_vars_let x [] => free_vars_let (F x))
-%R free_vars_let x [] :- !.
-free_vars_let (app F T) LB L :- free_vars_let F LB L1, free_vars_let T LB L2, union_list_term_univ L1 L2 L.
-free_vars_let (fun _) _ [].
-free_vars_let (adt _ _) _ [].	%R andare in ricorsione sugli argomenti
-free_vars_let (case_of X LC) LB L :- free_vars_let X LB L1, free_vars_let_aux_case LC LB L2, union_list_term_univ L1 L2 L.
-free_vars_let (boolean _) _ [].
-free_vars_let (if_then_else B X Y) LB L1plusL2plusL3 :- free_vars_let B LB L1, free_vars_let X LB L2, free_vars_let Y LB L3, union_list_term_univ L1 L2 L1plusL2, union_list_term_univ L1plusL2 L3 L1plusL2plusL3.
-free_vars_let (let_in LC T) LB L :- free_vars_let_aux_let LC LB L1, free_vars_let T LB L2, union_list_term_univ L1 L2 L.
-free_vars_let (decl_let _) _ [].
-free_vars_let (num _) _ [].
-%Rfree_vars_let T LB [] :- memp_term T LB, !.		% Se la T (una costante non legata) è presente in LB restituisce una lista vuota
-free_vars_let T _ [T].							% Altrimenti restituisce una lista contenente la T (una costante non legata)
+type free_vars_let term -> list term -> prop.
+%                  corpo let-in -> variabili libere -> _ .
+mode (free_vars_let i o).
+free_vars_let (lam F) L :- pi x \ free_vars_let x [] => free_vars_let (F x) L.		% 'pi x' restituisce una costante
+%R free_vars_let x [] :- !.		% ~ Non capisco dove e come dovrei utilizzarla
+free_vars_let (app F T) L :- free_vars_let F L1, free_vars_let T L2, union_list_term_univ L1 L2 L.
+free_vars_let (fun _) [].
+free_vars_let (adt _ LI) L :- free_vars_let_aux_adt LI L.
+free_vars_let (case_of X LC) L :- free_vars_let X L1, free_vars_let_aux_case LC L2, union_list_term_univ L1 L2 L.
+free_vars_let (boolean _) [].
+free_vars_let (if_then_else B X Y) L1plusL2plusL3 :- free_vars_let B L1, free_vars_let X L2, free_vars_let Y L3, union_list_term_univ L1 L2 L1plusL2, union_list_term_univ L1plusL2 L3 L1plusL2plusL3.
+free_vars_let (let_in LC T) L :- free_vars_let_aux_let LC L1, free_vars_let T L2, union_list_term_univ L1 L2 L.
+free_vars_let (decl_let _) [].
+free_vars_let (num _) [].
+free_vars_let T [T].
+
+% Trova tutte le variabili libere (= non legate da lambda o let-in) negli argomenti in input ad un adt
+type free_vars_let_aux_adt list term -> list term -> prop.
+free_vars_let_aux_adt [] [].
+free_vars_let_aux_adt [H|TL] L :- free_vars_let H L1, free_vars_let_aux_adt TL L2, union_list_term_univ L1 L2 L.
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) nei rami del case
-type free_vars_let_aux_case list pair -> list term -> list term -> prop.
-%                           rami del case -> variabili legate -> variabili libere -> _ .
-free_vars_let_aux_case [] _ [].		% Caso base
-free_vars_let_aux_case [branch _ T | TL] LB L :- free_vars_let T LB L1, free_vars_let_aux_case TL LB L2, union_list_term_univ L1 L2 L.
-free_vars_let_aux_case [dato F | TL] LB L :- pi x \ (free_vars_let_aux_case [(F x) | TL] LB L1, union_list_term_univ [x] L1 L).		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
+type free_vars_let_aux_case list pair -> list term -> prop.
+%                           rami del case -> variabili libere -> _ .
+free_vars_let_aux_case [] [].		% Caso base
+free_vars_let_aux_case [branch _ T | TL] L :- free_vars_let T L1, free_vars_let_aux_case TL L2, union_list_term_univ L1 L2 L.
+free_vars_let_aux_case [dato F | TL] L :- pi x \ (free_vars_let_aux_case [(F x) | TL] L1, union_list_term_univ [x] L1 L).		% Da 'dato x \ branch [...]' passa a controllare soltanto 'branch [...]'
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) nelle dichiarazioni del let-in
-type free_vars_let_aux_let list decl -> list term -> list term -> prop.
-%                          dichiarazioni del let-in -> variabili legate -> variabili libere -> _ .
-free_vars_let_aux_let [] _ [].		% Caso base
-free_vars_let_aux_let [coppia_decl _ T | TL] LB L :- free_vars_let T LB L1, free_vars_let_aux_let TL LB L2, union_list_term_univ L1 L2 L.
+type free_vars_let_aux_let list decl -> list term -> prop.
+%                          dichiarazioni del let-in -> variabili libere -> _ .
+free_vars_let_aux_let [] [].		% Caso base
+free_vars_let_aux_let [coppia_decl _ T | TL] L :- free_vars_let T L1, free_vars_let_aux_let TL L2, union_list_term_univ L1 L2 L.
 
 % Fa l'unione senza duplicati di due liste di termini
 type union_list_term_univ list term -> list term -> list term -> prop.
@@ -400,13 +394,13 @@ generalize Lnot T S :-
 type free_vars tipo -> list tipo -> list tipo -> prop.
 %              tipo -> variabili da escludere -> variabili libere -> _ .
 mode (free_vars i i o).
-free_vars (uvar _ as X) L [] :- memp_tipo X L, !.	% Caso base 2: Se la X (un tipo non istanziato: una variabile) è presente in L restituisce una lista vuota
-free_vars (uvar _ as X) _ [X].						% Altrimenti restituisce una lista contenente la X
+free_vars (uvar _ as X) Lnot [] :- memp_tipo X Lnot, !.		% Caso base 2: Se la X (un tipo non istanziato: una variabile) è presente in L restituisce una lista vuota
+free_vars (uvar _ as X) _ [X].								% Altrimenti restituisce una lista contenente la X
 free_vars (arr T1 T2) Lnot L :-
  free_vars T1 Lnot L1,
  free_vars T2 Lnot L2,
  union_list_tipo L1 L2 L.
-free_vars _T _ [].									% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
+free_vars _T _ [].											% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...) lo ignora e restituisce una lista vuota
 
 % Fa l'unione (senza duplicati) di due liste di tipi
 type union_list_tipo list tipo -> list tipo -> list tipo -> prop.
@@ -447,7 +441,7 @@ type assoc tipo -> tipo -> prop.
 mode (assoc i o).
 
 % Fa la copia ricorsiva
-type copy tipo -> schema -> prop.
+type copy tipo -> schema -> prop.	% ~ A questo punto (avendo messo ovunque 'base') non si potrebbe fare che come secondo argomento prende un 'tipo' anziché uno 'schema'?
 mode (copy i o).
 copy (uvar _ as X) (base Y) :- assoc X' Y, test_eqp_tipo X X'.		% Caso base 2: Se trova un tipo non istanziato (una variabile)
 copy (arr T1 T2) (base (arr T1' T2')) :-
@@ -481,20 +475,29 @@ test_schema 1 S :-
 
 type f nome_decl.
 
-%-OK (T = arr X2 (arr (arr X2 X3) X3))  con  associa_tipo f (for_all c1 \ base (arr (arr X2 c1) c1))
+%-OK (T = arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c1 \ base (arr (arr X0 c1) c1))
 test_type 11 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
 
 type id nome_decl.
 
-%-OK (T = int)
+%-OK (T = int)  con  associa_tipo id (for_all c0 \ base (arr c0 c0))
 test_type 12 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))) T.
- %R app id id  e poi  app id 4
 
-%-OK (T = bool)
+%-OK (T = bool)  con  associa_tipo id (for_all c0 \ base (arr c0 c0))
 test_type 13 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (boolean tt))) T.
+
+type id1 nome_decl.
+type id2 nome_decl.
+
+% ~ In che modo si intendeva fatto il test?
+% app id id  e poi  app id 4
+%-OK (T = int)  con  associa_tipo id1 (for_all c0 \ base (arr c0 c0)) , associa_tipo id2 (for_all c0 \ base (arr c0 c0))
+test_type 17 T :-
+ %of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (app (decl_let id) (num 4)))) T.
+ of (let_in [coppia_decl id1 (lam A \ A), coppia_decl id2 (lam B \ B)] (app (decl_let id1) (app (decl_let id2) (num 4)))) T.
 
 %-OK (T = arr X0 (arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) c2)))
 test_type 14 T :-
@@ -509,8 +512,15 @@ test_type 15 T :-
 test_type 16 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ lam y \ app (app g x) y)] (decl_let f)) T.
 
+type g nome_decl.
+
 %R Funzioni mutue:  f chiama g  e  g chiama f
 %R f chiama g  e  g chiama 2: scopri che la f è monomorfa sugli interi solo dalla g (se guardi soltanto la f pensi che sia polimorfa)
+%-
+test_type 18 T :-
+ of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) y)] (app (decl_let g) (num 2))) T.
+ %of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) y)] (decl_let g)) T.
+ %of (let_in [coppia_decl f (decl_let g), coppia_decl g (lam X \ X)] (app (decl_let g) (num 2))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
