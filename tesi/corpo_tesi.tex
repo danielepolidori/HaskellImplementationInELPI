@@ -5,119 +5,122 @@
 % report: stile tesi (oppure book)
 \documentclass[12pt,a4paper,openright,twoside]{report}
 
-\usepackage[italian]{babel} % libreria per scrivere in italiano
+\usepackage[italian]{babel} 	% libreria per scrivere in italiano
 \usepackage[latin1]{inputenc}   % libreria per accettare i caratteri digitati da tastiera come 'è' o 'à'
-\usepackage{fancyhdr}   % libreria per impostare il documento
-\usepackage{indentfirst}    % libreria per avere l'indentazione all'inizio dei capitoli
-%\usepackage{showkeys}  % libreria per mostrare le etichette
-\usepackage{graphicx}   % libreria per inserire grafici
-\usepackage{newlfont}   % libreria per utilizzare font particolari ad esempio \textsc{}
+\usepackage{fancyhdr}   		% libreria per impostare il documento
+\usepackage{indentfirst}    	% libreria per avere l'indentazione all'inizio dei capitoli
+%\usepackage{showkeys}  		% libreria per mostrare le etichette
+\usepackage{graphicx}   		% libreria per inserire grafici
+\usepackage{newlfont}   		% libreria per utilizzare font particolari ad esempio \textsc{}
 % librerie matematiche
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{latexsym}
 \usepackage{amsthm}
 
+\oddsidemargin=30pt \evensidemargin=20pt	% impostano i margini
+%\hyphenation{sil-la-ba-zio-ne pa-ren-te-si}	% serve per la sillabazione: tra parentesi vanno inserite come nell'esempio le parole che latex non riesce a tagliare nel modo giusto andando a capo
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\oddsidemargin=30pt \evensidemargin=20pt%impostano i margini
-%\hyphenation{sil-la-ba-zio-ne pa-ren-te-si}%serve per la sillabazione: tra parentesi 
-                       %vanno inserite come nell'esempio le parole 
-%                      %che latex non riesce a tagliare nel modo giusto andando a capo.
-
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%comandi per l'impostazione
-                                        %   della pagina, vedi il manuale
-                                        %   della libreria fancyhdr
-                                        %   per ulteriori delucidazioni
+% comandi per l'impostazione della pagina, vedi il manuale della libreria fancyhdr per ulteriori delucidazioni
 \pagestyle{fancy}\addtolength{\headwidth}{20pt}
 \renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
 \renewcommand{\sectionmark}[1]{\markright{\thesection \ #1}{}}
 \rhead[\fancyplain{}{\bfseries\leftmark}]{\fancyplain{}{\bfseries\thepage}}
 \cfoot{}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\linespread{1.3}                        %comando per impostare l'interlinea
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%definisce nuovi comandi
-%
+
+\linespread{1.3}	% comando per impostare l'interlinea
+
+
+
 \begin{document}
-\pagenumbering{roman}                   %serve per mettere i numeri romani
-\chapter*{Introduzione}                 %crea l'introduzione (un capitolo
-                                        %   non numerato)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
+
+
+\pagenumbering{roman}	% serve per mettere i numeri romani
+
+\chapter*{Introduzione}		% crea l'introduzione (un capitolo non numerato)
+
+% imposta l'intestazione di pagina
 \rhead[\fancyplain{}{\bfseries
 INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 INTRODUZIONE}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Introduzione
-                                        %   nell'indice
-\addcontentsline{toc}{chapter}{Introduzione}
+
+\addcontentsline{toc}{chapter}{Introduzione}	% aggiunge la voce Introduzione nell'indice
+
 Questa \`e l'introduzione.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-\tableofcontents                        %crea l'indice
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
+
+\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+
+
+\tableofcontents	% crea l'indice
+
+% imposta l'intestazione di pagina
 \rhead[\fancyplain{}{\bfseries\leftmark}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 INDICE}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-%\listoffigures                          %crea l'elenco delle figure
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-%\clearpage{\pagestyle{empty}\cleardoublepage}
-%\listoftables                           %crea l'elenco delle tabelle
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-%\clearpage{\pagestyle{empty}\cleardoublepage}
-\chapter{Primo Capitolo}                %crea il capitolo
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}
-\pagenumbering{arabic}                  %mette i numeri arabi
+
+\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+
+
+%\listoffigures		% crea l'elenco delle figure
+
+%\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+
+%\listoftables		% crea l'elenco delle tabelle
+
+%\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+
+\chapter{Primo Capitolo}		% crea il capitolo
+
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}	% imposta l'intestazione di pagina
+
+\pagenumbering{arabic}		% mette i numeri arabi
+
 Questo \`e il primo capitolo.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%per fare le conclusioni
-\chapter*{Conclusioni}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%imposta l'intestazione di pagina
+
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+
+\chapter*{Conclusioni}		% per fare le conclusioni
+
+% imposta l'intestazione di pagina
 \rhead[\fancyplain{}{\bfseries
 CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 CONCLUSIONI}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Conclusioni
-                                        %   nell'indice
-\addcontentsline{toc}{chapter}{Conclusioni} Queste sono le
-conclusioni.\\
-In queste conclusioni voglio fare un riferimento alla
-bibliografia: questo \`e il mio riferimento \cite{K3,K4}.
-\begin{thebibliography}{90}             %crea l'ambiente bibliografia
-\rhead[\fancyplain{}{\bfseries \leftmark}]{\fancyplain{}{\bfseries
-\thepage}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%aggiunge la voce Bibliografia
-                                        %   nell'indice
-\addcontentsline{toc}{chapter}{Bibliografia}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%provare anche questo comando:
-%%%%%%%%%%%\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}
-\bibitem{K1} Primo oggetto bibliografia.
-\bibitem{K2} Secondo oggetto bibliografia.
-\bibitem{K3} Terzo oggetto bibliografia.
-\bibitem{K4} Quarto oggetto bibliografia.
-\end{thebibliography}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%non numera l'ultima pagina sinistra
-\clearpage{\pagestyle{empty}\cleardoublepage}
+
+\addcontentsline{toc}{chapter}{Conclusioni}		% aggiunge la voce Conclusioni nell'indice
+
+Queste sono le conclusioni.\\
+In queste conclusioni voglio fare un riferimento alla bibliografia: questo \`e il mio riferimento \cite{K3,K4}.
+
+
+%\begin{thebibliography}{90}		% crea l'ambiente bibliografia
+
+%\rhead[\fancyplain{}{\bfseries \leftmark}]{\fancyplain{}{\bfseries
+%\thepage}}
+
+%\addcontentsline{toc}{chapter}{Bibliografia}	% aggiunge la voce Bibliografia nell'indice
+%%\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}	% provare anche questo comando
+
+%\bibitem{K1} Primo oggetto bibliografia.
+%\bibitem{K2} Secondo oggetto bibliografia.
+%\bibitem{K3} Terzo oggetto bibliografia.
+%\bibitem{K4} Quarto oggetto bibliografia.
+
+%\end{thebibliography}
+
+\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+
+
 \chapter*{Ringraziamenti}
+
 \thispagestyle{empty}
+
 Qui possiamo ringraziare il mondo intero!!!!!!!!!!\\
 Ovviamente solo se uno vuole, non \`e obbligatorio.
+
+
 \end{document}
