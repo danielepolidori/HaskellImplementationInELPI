@@ -301,23 +301,6 @@ generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, associa_tipo
 %generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, associa_tipo_aux N T, print (associa_tipo_aux N T), free_vars_let C L, print (free_vars_let C L), vars_in_type L L', print (vars_in_type L L'), generalize L' T S, print (generalize L' T S), print (associa_tipo N S), generalize_list_let TL CMD.		% ~ debug
 %generalize_list_let [coppia_decl N C | TL] OUT CMD :- OUT => (associa_tipo N S, free_vars_let C L, vars_in_type L L1, generalize L1 T S, generalize_list_let TL [] CMD).	% ~ idea 2
 
-%R Recupera anche l'eventuale vincolo della typeclass
-% ~ Dopodichè devi trasformare i vincoli in L in uno schema tramite "implies".
-
-% ~ È giusto che i vincoli 'istanza _ X _' vengano rimossi?
-% Il predicato (retrieve_constraints X L) prende X in input e mette in L la lista di tutti i vincoli su X, rimuovendoli dalla lista dei predicati.
-type retrieve_constraints tipo -> list prop -> prop.
-retrieve_constraints X [Y|L] :-
- declare_constraint (retrieve X Y) [X], !,
- retrieve_constraints X L.
-retrieve_constraints _ [].	% Caso base
-
-type retrieve tipo -> prop -> prop.
-constraint istanza retrieve {
- rule \ (retrieve X Y) (istanza N X L) <=> (Y = istanza N X L).		% Tolgo quei due vincoli a sx e aggiungo quello a dx (viene messo al posto del vincolo)		% 'istanza N X L' chiede che su X sia dichiarata un'istanza della type-class N
- rule \ (retrieve X Y) <=> false.									% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
-}
-
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
 %                 variabili di termini -> variabili di tipo -> _ .
@@ -404,7 +387,8 @@ type generalize list tipo -> tipo -> schema -> prop.
 %       --> S diventa for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2))
 generalize Lnot T S :-
  free_vars T Lnot L1,
- generalize_aux L1 T S.
+ %generalize_aux L1 T S.
+ generalize_forall L1 L1 T S.
 
 % Colleziona la lista (es: [X,Y,Z]) priva di duplicati delle variabili nel tipo in input (escludendo quelle presenti nella lista in input)
 type free_vars tipo -> list tipo -> list tipo -> prop.
@@ -445,12 +429,26 @@ constraint eqp_tipo {
  rule \ (eqp_tipo A B) <=> false.	% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
 }
 
+/*
 % Mette al posto delle variabili (es: [X,Y,Z]) delle costanti quantificate con un forall
 type generalize_aux list tipo -> tipo -> schema -> prop.
 %                   variabili -> tipo -> schema -> _ .
 generalize_aux [] T S :- copy T S.		% Caso base
 generalize_aux [X|L] T (for_all S) :-
  pi x \ assoc X x => generalize_aux L T (S x).
+*/
+
+%R Recupera anche l'eventuale vincolo della typeclass
+% ~ Dopodichè devi trasformare i vincoli in L in uno schema tramite "implies".
+
+type generalize_forall list tipo -> list tipo -> tipo -> schema -> prop.
+generalize_forall [] L T S :- generalize_instance [] _ L T S.		% Caso base
+generalize_forall [X|TL] L T (for_all S) :- pi x \ assoc X x => generalize_forall TL L T (S x).
+
+type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> prop.
+generalize_instance [] _ [] T S :- copy T S.
+generalize_instance [] _ [X|TL] T S :- retrieve_constraints X LI, assoc X X', generalize_instance LI X' TL T S.
+generalize_instance [istanza N _ _ | LI] X' TL T (implies (is_instance N X') S) :- generalize_instance LI X' TL T S.
 
 % L'ipotesi (assoc X x) ricorda che la X deve essere sostituita con la x durante la copy
 type assoc tipo -> tipo -> prop.
@@ -464,6 +462,20 @@ copy (arr T1 T2) (base (arr T1' T2')) :-
  copy T1 (base T1'),
  copy T2 (base T2').
 copy T (base T).													% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...)
+
+% ~ È giusto che i vincoli 'istanza _ X _' vengano rimossi?
+% Il predicato (retrieve_constraints X L) prende X in input e mette in L la lista di tutti i vincoli su X, rimuovendoli dalla lista dei predicati.
+type retrieve_constraints tipo -> list prop -> prop.
+retrieve_constraints X [Y|L] :-
+ declare_constraint (retrieve X Y) [X], !,
+ retrieve_constraints X L.
+retrieve_constraints _ [].	% Caso base
+
+type retrieve tipo -> prop -> prop.
+constraint istanza retrieve {
+ rule \ (retrieve X Y) (istanza N X L) <=> (Y = istanza N X L).		% Tolgo quei due vincoli a sx e aggiungo quello a dx (viene messo al posto del vincolo)		% 'istanza N X L' chiede che su X sia dichiarata un'istanza della type-class N
+ rule \ (retrieve X Y) <=> false.									% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
+}
 
 
 %% Test
@@ -694,20 +706,22 @@ type is_instance nome_classe -> tipo -> holds.
 
 type implies holds -> schema -> schema.
 
-% es1:   for_all t \ implies (is_instance printable t) (base (arr t string))
-% es2:   for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance printable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))
+% es:   for_all t \ implies (is_instance printable t) (base (arr t string))
+% es:   for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance printable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))
+% es:   for_all t \ implies (is_instance printable t) (implies (is_instance comparable t) (implies (is_instance sortable t) (base (arr t t))))
+% es:   for_all t1 \ for_all t2 \ implies (is_instance printable t1) (implies (is_instance comparable t1) (implies (is_instance sortable t2) (base (arr t1 t2))))
 
 
 %instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.	% ~ È sbagliato: deve cercare il vincolo 'istanza', non crearne uno nuovo
 
 % Cerca il vincolo 'istanza', se non lo trova ne crea uno nuovo
-instantiate (implies (is_instance N T) S) O :- declare_constraint (cerca_istanza N T) [], !, instantiate S O.
+instantiate (implies (is_instance N _) S) O :- declare_constraint (cerca_istanza N) [], !, instantiate S O.
 instantiate (implies (is_instance N T) S) O :- istanza N T _, instantiate S O.
 
-type cerca_istanza nome_classe -> tipo -> prop.
-constraint istanza cerca_istanza {
- rule (istanza N X _) \ (cerca_istanza N X) <=> true.		% 'istanza N X L' chiede che su X sia dichiarata un'istanza della type-class N
- rule \ (cerca_istanza N X) <=> false.						% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
+type cerca_istanza nome_classe -> prop.
+constraint cerca_istanza {
+ rule (istanza N _ _) \ (cerca_istanza N) <=> true.			% 'istanza N _ _' chiede che sia dichiarata un'istanza della type-class N
+ rule \ (cerca_istanza N) <=> false.						% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
 }
 
 
@@ -717,7 +731,7 @@ constraint istanza cerca_istanza {
 %   (es: capisce che deve esistere una generica 'istanza comparable X1 _' ma non riesce a dire che funziona con 'X1 = int')
 %   Non trova l'istanza esistente ma impone un vincolo per una nuova istanza.
 
-%-OK (T = arr X0 string, istanza printable X0 X1)
+%-OK (T = arr X0 string)  con  istanza printable X0 X1
 test_type 9 T :-
  instantiate (for_all t \ implies (is_instance printable t) (base (arr t string))) T.
 
@@ -726,7 +740,7 @@ type compare nome_fun.
 type compare_int nome_fun.
 istanza comparable int [fun_impl compare (fun compare_int)].
 
-%-OK (T = arr X0 (arr X1 X2), istanza comparable X1 X3, istanza printable X0 X4)
+%-OK (T = arr X0 (arr X1 X2))  con  istanza comparable X1 X3 , istanza printable X0 X4
 test_type 10 T :-
  instantiate (for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance comparable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))) T.
 
