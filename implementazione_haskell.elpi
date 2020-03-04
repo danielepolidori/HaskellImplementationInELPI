@@ -387,7 +387,6 @@ type generalize list tipo -> tipo -> schema -> prop.
 %       --> S diventa for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2))
 generalize Lnot T S :-
  free_vars T Lnot L1,
- %generalize_aux L1 T S.
  generalize_forall L1 L1 T S.
 
 % Colleziona la lista (es: [X,Y,Z]) priva di duplicati delle variabili nel tipo in input (escludendo quelle presenti nella lista in input)
@@ -429,23 +428,15 @@ constraint eqp_tipo {
  rule \ (eqp_tipo A B) <=> false.	% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
 }
 
-/*
 % Mette al posto delle variabili (es: [X,Y,Z]) delle costanti quantificate con un forall
-type generalize_aux list tipo -> tipo -> schema -> prop.
-%                   variabili -> tipo -> schema -> _ .
-generalize_aux [] T S :- copy T S.		% Caso base
-generalize_aux [X|L] T (for_all S) :-
- pi x \ assoc X x => generalize_aux L T (S x).
-*/
-
-%R Recupera anche l'eventuale vincolo della typeclass
-% ~ Dopodichè devi trasformare i vincoli in L in uno schema tramite "implies".
-
-type generalize_forall list tipo -> list tipo -> tipo -> schema -> prop.
+type generalize_forall list tipo -> list tipo -> tipo -> schema -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
+%                      variabili -> variabili -> tipo -> schema -> _ .
 generalize_forall [] L T S :- generalize_instance [] _ L T S.		% Caso base
 generalize_forall [X|TL] L T (for_all S) :- pi x \ assoc X x => generalize_forall TL L T (S x).
 
+% Recupera anche l'eventuale vincolo della typeclass, dopodiché trasforma quei vincoli in uno schema tramite "implies"
 type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> prop.
+%
 generalize_instance [] _ [] T S :- copy T S.
 generalize_instance [] _ [X|TL] T S :- retrieve_constraints X LI, assoc X X', generalize_instance LI X' TL T S.
 generalize_instance [istanza N _ _ | LI] X' TL T (implies (is_instance N X') S) :- generalize_instance LI X' TL T S.
@@ -563,6 +554,63 @@ test_list_prop 1 L :-
  declare_constraint (istanza b Y _) [Y],
  declare_constraint (istanza c X _) [X],
  retrieve_constraints X L.
+
+%-OK (L = [istanza b X0 X1])
+test_list_prop 2 L :-
+ declare_constraint (istanza a X _) [X],
+ declare_constraint (istanza b Y _) [Y],
+ declare_constraint (istanza c X _) [X],
+ retrieve_constraints Y L.
+ 
+%-OK (L = [])
+test_list_prop 3 L :-
+ declare_constraint (istanza a X _) [X],
+ declare_constraint (istanza b Y _) [Y],
+ declare_constraint (istanza c X _) [X],
+ retrieve_constraints Z_ L.
+
+%typeclass printable T [fun_decl print_ (base (arr T string))].		% È commentata perché viene assunta in un altro punto del codice
+
+% Da confrontare con il test 20
+%-OK (T = arr X0 X0)  con  associa_tipo f (for_all c0 \ base (arr c0 c0))
+test_type 19 T :-
+ of (let_in [coppia_decl f (lam x \ x)] (decl_let f)) T.
+
+%-OK (T = arr X0 string)  con  associa_tipo f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string)))
+test_type 20 T :-
+ of (let_in [coppia_decl f (lam x \ app (fun print_) x)] (decl_let f)) T.
+
+type comparable nome_classe.
+type eq_ nome_fun.
+typeclass comparable V [fun_decl eq_ (base (arr V (arr V bool)))].
+
+%-OK (...  con  associa_tipo f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string))) , associa_tipo g (for_all c0 \ implies (is_instance comparable c0) (base (arr c0 (arr c0 bool)))))
+test_type 21 T :-
+ of (let_in [coppia_decl f (lam x \ app (fun print_) x), coppia_decl g (lam y1 \ lam y2 \ app (app (fun eq_) y1) y2)] (decl_let g)) T.
+
+type hashable nome_classe.
+type hash nome_fun.
+typeclass hashable T [fun_decl hash (base (arr T int))].
+
+type associa_nome_hash nome_fun.
+assume (fun_decl associa_nome_hash (base (arr string (arr int bool)))).		% es: Li associa e ritorna true se il tutto è andato a buon fine
+
+% La x è sia printable che hashable
+%-OK (...  con  associa_tipo f (for_all c0 \ implies (is_instance hashable c0) (implies (is_instance printable c0) (base (arr c0 bool)))))
+test_type 22 T :-
+ of (let_in [coppia_decl f (lam x \ app (app (fun associa_nome_hash) (app (fun print_) x)) (app (fun hash) x))] (decl_let f)) T.
+
+% La x è printable, la y è hashable (la x e la y potrebbero avere lo stesso tipo, il quale sarebbe sia printable che hashable, dal momento che si tratta di tipi generici per entrambe le typeclass)
+%-NO (...  con  associa_tipo f (for_all c0 \ for_all c1 \ implies (is_instance printable c1) (implies (is_instance hashable c1) (base (arr c1 (arr c1 bool)))))
+%          oppure  associa_tipo f (for_all c0 \ for_all c1 \ implies (is_instance printable c1) (implies (is_instance hashable c0) (base (arr c1 (arr c0 bool))))))
+test_type 23 T :-
+ of (let_in [coppia_decl f (lam x \ lam y \ app (app (fun associa_nome_hash) (app (fun print_) x)) (app (fun hash) y))] (decl_let f)) T.
+
+% ~ È giusto che fallisca?
+%-NO (Failure)
+test_type 24 T :-
+ of (let_in [coppia_decl f (lam x \ lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
+ %pi x \ of x string => of (let_in [coppia_decl f (lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -683,7 +731,7 @@ search_fun (fun_impl N1 C) [fun_decl N2 S | TL] [fun_decl N2 S | OUT] :- search_
 
 type test_ int -> prop.
 
-typeclass printable T [fun_decl print_ (base (arr T string))].
+%typeclass printable T [fun_decl print_ (base (arr T string))].		% È commentata perché viene assunta in un altro punto del codice
 
 %-OK
 test_ 1 :-
