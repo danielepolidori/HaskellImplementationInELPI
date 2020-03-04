@@ -6,7 +6,7 @@
 \documentclass[12pt,a4paper,openright,twoside]{report}
 
 \usepackage[italian]{babel} 	% libreria per scrivere in italiano
-\usepackage[latin1]{inputenc}   % libreria per accettare i caratteri digitati da tastiera come 'è' o 'à'
+\usepackage[utf8]{inputenc}   % libreria per accettare i caratteri digitati da tastiera come 'è' o 'à'
 \usepackage{fancyhdr}   		% libreria per impostare il documento
 \usepackage{indentfirst}    	% libreria per avere l'indentazione all'inizio dei capitoli
 %\usepackage{showkeys}  		% libreria per mostrare le etichette
@@ -35,21 +35,7 @@
 \begin{document}
 
 
-\pagenumbering{roman}	% serve per mettere i numeri romani
-
-\chapter*{Introduzione}		% crea l'introduzione (un capitolo non numerato)
-
-% imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries
-INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-INTRODUZIONE}}
-
-\addcontentsline{toc}{chapter}{Introduzione}	% aggiunge la voce Introduzione nell'indice
-
-Questa \`e l'introduzione.
-
-\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+\pagenumbering{arabic}		% mette i numeri arabi
 
 
 \tableofcontents	% crea l'indice
@@ -72,26 +58,81 @@ INDICE}}
 %\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
-\chapter{Primo Capitolo}		% crea il capitolo
+\chapter{Introduzione}		% crea l'introduzione
+
+% imposta l'intestazione di pagina
+\rhead[\fancyplain{}{\bfseries
+INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
+INTRODUZIONE}}
+
+\section{Stato dell'arte}
+Ho implementato l'algoritmo di type inference di Haskell in ELPI.\\
+Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale.\\
+La type inference è \\%...
+ELPI è un linguaggio di programmazione logico. Esso è l'espansione di $\lambda$Prolog, il quale a sua volta è l'espansione di Prolog.\\
+Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole che sono disgiunzioni di letterali del prim'ordine. Eseguire un programma Prolog può essere comparato a dimostrare un teorema mediante la regola di inferenza detta risoluzione. I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.\\
+$\lambda$Prolog è, come già detto, l'espansione di Prolog. \\%...
+Essendo $\lambda$Prolog un linguaggio che non utilizza i vincoli risulta impossibile implementare la type inference; infatti tale limite si riscontra in particolare nel tentare di codificare il tipaggio per i costrutti del let-in e delle type class.\\
+L'unica strategia attuabile sarebbe quella di codificare interamente il sistema punto per punto, il che evidentemente rende tale strategia impraticabile.\\
+È stato dunque necessario l'utilizzo di ELPI, la cui maggiore espressività permette di svolgere operazioni impossibili da codificare in $\lambda$Prolog.
+% fare i due esempi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{ELPI}
+
+\section{Haskell}
+
+\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+
+
+\chapter{Implementazione}		% crea il capitolo
 
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}	% imposta l'intestazione di pagina
-
-\pagenumbering{arabic}		% mette i numeri arabi
 
 Questo \`e il primo capitolo.
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
-\chapter*{Conclusioni}		% per fare le conclusioni
+\chapter{Conclusioni}		% per fare le conclusioni
 
 % imposta l'intestazione di pagina
 \rhead[\fancyplain{}{\bfseries
 CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 CONCLUSIONI}}
-
-\addcontentsline{toc}{chapter}{Conclusioni}		% aggiunge la voce Conclusioni nell'indice
 
 Queste sono le conclusioni.\\
 In queste conclusioni voglio fare un riferimento alla bibliografia: questo \`e il mio riferimento \cite{K3,K4}.

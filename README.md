@@ -22,3 +22,5 @@
 - È giusto fare in quel modo la terza passata (generalize_list_let)?
 
 - Errore di associa_tipo con implies nei test
+
+- La FINALITÀ di questo lavoro è solamente quella didattica (riuscire a codificare con un linguaggio logico un linguaggio funzionale)?
