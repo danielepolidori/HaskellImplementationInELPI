@@ -436,8 +436,8 @@ generalize_forall [X|TL] L T (for_all S) :- pi x \ assoc X x => generalize_foral
 
 % Recupera anche l'eventuale vincolo della typeclass, dopodiché trasforma quei vincoli in uno schema tramite "implies"
 type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> prop.
-%
-generalize_instance [] _ [] T S :- copy T S.
+%                        istanze su tipoX -> tipoX -> variabili -> tipo -> schema -> _ .
+generalize_instance [] _ [] T S :- copy T S.	% Caso base
 generalize_instance [] _ [X|TL] T S :- retrieve_constraints X LI, assoc X X', generalize_instance LI X' TL T S.
 generalize_instance [istanza N _ _ | LI] X' TL T (implies (is_instance N X') S) :- generalize_instance LI X' TL T S.
 

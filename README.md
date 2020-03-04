@@ -4,8 +4,6 @@
 
 ### DA FARE:
 
-- Testare il mio lavoro di test2.elpi
-
 - Devo RINOMINARE 'adt' in 'costruttore' oppure 'k' anche se non separo dichiarazione e occorrenza degli adt?
 
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
@@ -17,9 +15,10 @@
 
 
 
-### CHIEDERE:
+### CHIEDERE AL PROF:
 
-- Correttezza dell' (instantiate (implies _ _) _)
-  (TODO NEXT B)
+- Correttezza dell' (instantiate (implies _ _) _) in TODO NEXT B
 
 - È giusto fare in quel modo la terza passata (generalize_list_let)?
+
+- Errore di associa_tipo con implies nei test
