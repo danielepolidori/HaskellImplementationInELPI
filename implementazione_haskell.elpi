@@ -278,6 +278,7 @@ type coppia_decl nome_decl -> term -> decl.
 %              cioè   [id = (lam A \ A)] (id 4)
 
 of (let_in L EXPR) T :- associa_list_let L L (of EXPR T).
+%Rof (let_in L EXPR) T :- associa_list_let L L (of EXPR T) OUT, OUT => terza passata.
 
 % Prima passata per associare un tipo (come variabile) alla dichiarazione
 type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
@@ -318,6 +319,7 @@ type free_vars_let term -> list term -> prop.
 %                  corpo let-in -> variabili libere -> _ .
 mode (free_vars_let i o).
 free_vars_let (lam F) L :- pi x \ free_vars_let x [] => free_vars_let (F x) L.		% 'pi x' restituisce una costante
+%Rfree_vars_let (lam F) L :- pi x \ (free_vars_let x [] :- !) => free_vars_let (F x) L.		% 'pi x' restituisce una costante
 %R free_vars_let x [] :- !.		% ~ Non capisco dove e come dovrei utilizzarla
 free_vars_let (app F T) L :- free_vars_let F L1, free_vars_let T L2, union_list_term_univ L1 L2 L.
 free_vars_let (fun _) [].
@@ -455,6 +457,7 @@ copy (arr T1 T2) (base (arr T1' T2')) :-
 copy T (base T).													% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...)
 
 % ~ È giusto che i vincoli 'istanza _ X _' vengano rimossi?
+%R   --> SI
 % Il predicato (retrieve_constraints X L) prende X in input e mette in L la lista di tutti i vincoli su X, rimuovendoli dalla lista dei predicati.
 type retrieve_constraints tipo -> list prop -> prop.
 retrieve_constraints X [Y|L] :-
@@ -516,6 +519,7 @@ type id2 nome_decl.
 %-OK (T = int)  con  associa_tipo id1 (for_all c0 \ base (arr c0 c0)) , associa_tipo id2 (for_all c0 \ base (arr c0 c0))
 test_type 17 T :-
  %of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (app (decl_let id) (num 4)))) T.
+ %R ((id id) 4)		id1:(int->int)->(int->int)		id2:int->int
  of (let_in [coppia_decl id1 (lam A \ A), coppia_decl id2 (lam B \ B)] (app (decl_let id1) (app (decl_let id2) (num 4)))) T.
 
 %-OK (T = arr X0 (arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) c2)))
@@ -538,6 +542,7 @@ type g nome_decl.
 %-
 test_type 18 T :-
  of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) y)] (app (decl_let g) (num 2))) T.
+ %R of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) 2)] (decl_let f)) T.
  %of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) y)] (decl_let g)) T.
  %of (let_in [coppia_decl f (decl_let g), coppia_decl g (lam X \ X)] (app (decl_let g) (num 2))) T.
 
@@ -763,7 +768,7 @@ type implies holds -> schema -> schema.
 %instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.	% ~ È sbagliato: deve cercare il vincolo 'istanza', non crearne uno nuovo
 
 % Cerca il vincolo 'istanza', se non lo trova ne crea uno nuovo
-instantiate (implies (is_instance N _) S) O :- declare_constraint (cerca_istanza N) [], !, instantiate S O.
+%Rinstantiate (implies (is_instance N _) S) O :- declare_constraint (cerca_istanza N) [], !, instantiate S O.
 instantiate (implies (is_instance N T) S) O :- istanza N T _, instantiate S O.
 
 type cerca_istanza nome_classe -> prop.
@@ -778,6 +783,7 @@ constraint cerca_istanza {
 % ~ È giusto che impone un vincolo per una istanza generica piuttosto che notare che una istanza specifica già esiste e che quindi può supporre i vari tipi plausibili dell'istanza?
 %   (es: capisce che deve esistere una generica 'istanza comparable X1 _' ma non riesce a dire che funziona con 'X1 = int')
 %   Non trova l'istanza esistente ma impone un vincolo per una nuova istanza.
+%R   --> È GIUSTO COSÌ
 
 %-OK (T = arr X0 string)  con  istanza printable X0 X1
 test_type 9 T :-
