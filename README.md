@@ -24,3 +24,11 @@
 - Errore di associa_tipo con implies nei test
 
 - La FINALITÀ di questo lavoro è solamente quella didattica (riuscire a codificare con un linguaggio logico un linguaggio funzionale)?
+
+
+
+### TESI:
+
+- Indentare ogni prima riga quando si va a capo
+
+- Spazi aumentati tra le varie parole, è giusto?

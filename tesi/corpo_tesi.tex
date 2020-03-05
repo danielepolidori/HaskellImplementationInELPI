@@ -66,53 +66,72 @@ INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 INTRODUZIONE}}
 
+Il lavoro da me svolto consiste nell'implementazione dell'algoritmo di type inference di Haskell in ELPI.\\
+
 \section{Stato dell'arte}
-Ho implementato l'algoritmo di type inference di Haskell in ELPI.\\
-Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale.\\
-La type inference è \\%...
-ELPI è un linguaggio di programmazione logico. Esso è l'espansione di $\lambda$Prolog, il quale a sua volta è l'espansione di Prolog.\\
-Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole che sono disgiunzioni di letterali del prim'ordine. Eseguire un programma Prolog può essere comparato a dimostrare un teorema mediante la regola di inferenza detta risoluzione. I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.\\
-$\lambda$Prolog è, come già detto, l'espansione di Prolog. \\%...
-Essendo $\lambda$Prolog un linguaggio che non utilizza i vincoli risulta impossibile implementare la type inference; infatti tale limite si riscontra in particolare nel tentare di codificare il tipaggio per i costrutti del let-in e delle type class.\\
+Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensione degli argomenti seguenti.\\
+Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale. Al suo interno è presente il lambda calcolo e il meccanismo delle type class; è presente inoltre una parte più ampia che corrisponde alle librerie.\\
+La type inference è il rilevamento automatico del tipo di dato di un'espressione in un linguaggio di programmazione. La capacità di dedurre i tipi automaticamente semplifica molte attività di programmazione, lasciando il programmatore libero di omettere le annotazioni sui tipi pur consentendo il type check.\\
+ELPI è un linguaggio di programmazione logico. Esso è un'estensione con vincoli del linguaggio $\lambda$Prolog, il quale a sua volta è un'estensione di Prolog a una logica di ordine superiore.\\
+Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole che sono disgiunzioni di letterali del prim'ordine. L'esecuzione di un programma Prolog è comparabile alla dimostrazione di un teorema mediante la regola di inferenza detta risoluzione. I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.\\
+$\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.\\
+Non essendo $\lambda$Prolog un linguaggio di programmazione con vincoli risulta impossibile implementare la type inference mediante esso. I limiti dell'utilizzo di tale linguaggio si riscontrano in particolare nel tentare di codificare il tipaggio per i costrutti del let-in e della type class.\\
 L'unica strategia attuabile sarebbe quella di codificare interamente il sistema punto per punto, il che evidentemente rende tale strategia impraticabile.\\
-È stato dunque necessario l'utilizzo di ELPI, la cui maggiore espressività permette di svolgere operazioni impossibili da codificare in $\lambda$Prolog.
-% fare i due esempi
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Si è reso dunque necessario l'utilizzo di ELPI, la cui maggiore espressività permette di svolgere operazioni impossibili da codificare in $\lambda$Prolog. Prendendiamo come esempio i due casi indicati precedentemente:
+\begin{itemize}
+ \item Per codificare il tipaggio del let-in è necessario l'utilizzo del meccanismo mode di ELPI. Infatti, grazie ad esso, si è in grado di accorgersi se un elemento del codice è una variabile, così da poterla gestire in modo appropriato.
+ \item Per codificare il tipaggio della type class è necessario l'utilizzo dei vincoli. Infatti questi possono sussistere anche non totalmente istanziati e quindi permettono, ad esempio, di fissare l'obbligo di appartenenza di una variabile di tipo ad un'istanza di type class.
+\end{itemize}
+Entrambi i requisiti sono caratteristiche presenti in ELPI ma non in $\lambda$Prolog. Risulta dunque evidente la necessità di utilizzare ELPI come linguaggio di programmazione per poter raggiungere lo scopo prefissato.
 
 \section{ELPI}
+\subsection{Introduzione al linguaggio}
+ELPI, così come $\lambda$Prolog, è un linguaggio logico di ordine superiore (HOLP language - Higher Order Logic Programming language).
+%La differenza sta nell'aggiunta dei vincoli...
+%cos'è l'ordine superiore...
+%cosa sono i vincoli... o verrà detto nella sottosezione seguente?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Sistema di propagazione dei vincoli}
+% ...
 
 \section{Haskell}
+% ...
+\subsection{BNF utilizzata}
+% ...
+\subsection{Type class}
+% ...
+\subsection{Let-in}
+% ...
 
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
@@ -121,7 +140,19 @@ L'unica strategia attuabile sarebbe quella di codificare interamente il sistema 
 
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}	% imposta l'intestazione di pagina
 
-Questo \`e il primo capitolo.
+% ...
+
+\section{STLC}
+% ...
+
+\section{Funzioni ricorsive, match}
+% ...
+
+\section{Type class, instanza, schema}
+% ...
+
+\section{Let-in}
+% ...
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
@@ -134,8 +165,25 @@ CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
 CONCLUSIONI}}
 
-Queste sono le conclusioni.\\
-In queste conclusioni voglio fare un riferimento alla bibliografia: questo \`e il mio riferimento \cite{K3,K4}.
+% ...
+
+\section{Riassumendo}
+% ...
+
+\section{La mia esperienza con ELPI}
+% ...
+
+\section{Il mio lavoro}
+% ...
+
+\section{Sviluppi futuri}
+% ...
+\subsection{Parser}
+% ...
+\subsection{Testing}
+% ...
+\subsection{Estensioni}
+% ...
 
 
 %\begin{thebibliography}{90}		% crea l'ambiente bibliografia
@@ -148,8 +196,7 @@ In queste conclusioni voglio fare un riferimento alla bibliografia: questo \`e i
 
 %\bibitem{K1} Primo oggetto bibliografia.
 %\bibitem{K2} Secondo oggetto bibliografia.
-%\bibitem{K3} Terzo oggetto bibliografia.
-%\bibitem{K4} Quarto oggetto bibliografia.
+% ...
 
 %\end{thebibliography}
 
@@ -160,8 +207,7 @@ In queste conclusioni voglio fare un riferimento alla bibliografia: questo \`e i
 
 \thispagestyle{empty}
 
-Qui possiamo ringraziare il mondo intero!!!!!!!!!!\\
-Ovviamente solo se uno vuole, non \`e obbligatorio.
+% ...
 
 
 \end{document}
