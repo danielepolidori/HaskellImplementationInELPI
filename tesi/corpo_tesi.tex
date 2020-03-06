@@ -18,6 +18,8 @@
 \usepackage{latexsym}
 \usepackage{amsthm}
 
+\usepackage{syntax}
+
 \oddsidemargin=30pt \evensidemargin=20pt	% impostano i margini
 %\hyphenation{sil-la-ba-zio-ne pa-ren-te-si}	% serve per la sillabazione: tra parentesi vanno inserite come nell'esempio le parole che latex non riesce a tagliare nel modo giusto andando a capo
 
@@ -81,7 +83,7 @@ Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensi
  \begin{equation}
   H :- A_1,\ldots,A_n.
  \end{equation}
- La semantica è quella di una implicazione rovesciata: $H \leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo $:-$ è omesso, ma non il punto finale. Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
+ La semantica è quella di una implicazione rovesciata: $H \Leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo $:-$ è omesso, ma non il punto finale. Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
  \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.
 \end{description}
 
@@ -114,27 +116,27 @@ Generalmente l'approccio con ELPI è il seguente:
  \item Se si ha dei teoremi li si aggiunge, essi sono utili per evitare un accumulo non necessario di vincoli.
 \end{enumerate}
 \begin{description}
- \item[Primo punto] Si raggiunge definendo il \verb"mode" di un costrutto.\\
+ \item[Primo punto] Si raggiunge definendo il \verb"mode" di un costrutto. Saranno presenti un numero di \verb"i" e di \verb"o" pari, rispettivamente, alla quantità di elementi in input e in output al costrutto.\\
  Struttura:
  \begin{center}
- \verb"mode ("\textit{costrutto  serie di}\verb" i  "\textit{serie di}\verb"o)."
+ \verb"mode ("\textit{costrutto}\verb" i o)."
  \end{center}
- \item[Secondo punto] Si risolve dichiarando che un predicato contenente quel costrutto, il quale presenta in input una variabile non istanziata, può essere soddisfatto aggiungendo un vincolo contentente quel costrutto al cui interno sarà presente la variabile non istanziata; viene inoltre fissata la lista di variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato nel momento in cui le variabili saranno istanziate.\\
+ \item[Secondo punto] Si risolve dichiarando che un predicato contenente quel costrutto, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contentente quel costrutto al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
  Struttura:
  \begin{center}
  \textit{costrutto}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
- \verb"!, declare_constraint ("\textit{vincolo}\verb") ["\textit{variabile non istanziata}\verb"]."
+ \verb"!, declare_constraint ("\textit{vincolo}\verb") ["\textit{variabili non istanziate}\verb"]."
  \end{center}
- \item[Terzo punto] Il terzo punto si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più \verb"rule", regole di riscrittura dei vincoli. Esse sono della forma:
+ \item[Terzo punto] Si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più \verb"rule", regole di riscrittura dei vincoli. Esse sono della forma:
  \begin{center}
   \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."
  \end{center}
- Oppure può trovarsi in una delle forme ristrette:
+ Oppure possono trovarsi in una delle forme ristrette:
  \begin{center}
   \verb"rule \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."\\
   \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{aggiungo}\verb"."\\
   \verb"rule \ "\textit{tolgo}\verb" <=> "\textit{aggiungo}\verb"."\\
- \end{center}\\
+ \end{center}
  Struttura:
  \begin{center}
   \verb"constraint "\textit{costrutto}\verb" {"\textit{regole}\verb"}"
@@ -144,7 +146,7 @@ Generalmente l'approccio con ELPI è il seguente:
 Il sistema di propagazione dei vincoli consiste nella riscrittura di insiemi di vincoli in altri insiemi di vincoli.
 
 \subsubsection{Esempi}
-Per comprendere meglio il concetto presento ora due pezzi di codice, parte del mio lavoro.\\
+Per comprendere meglio il concetto presento ora due frammenti di codice, estrapolati dal mio lavoro.\\
 \begin{itemize}
  \item Implementazione di \verb"of", il costrutto utilizzato per codificare il tipaggio di un termine.
   \begin{verbatim}
@@ -162,45 +164,34 @@ Per comprendere meglio il concetto presento ora due pezzi di codice, parte del m
   \end{verbatim}
 \end{itemize}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \section{Haskell}
-% ...
-\subsection{BNF utilizzata}
-% ...
-\subsection{Type class}
-% ...
-\subsection{Let-in}
+
+Il mio lavoro comprende l'implementazione di una parte di Haskell, non di tutto il linguaggio. Presento ora gli argomenti da me trattati.
+
+\subsection{BNF}
+\begin{grammar}
+ \let\syntleft\relax    % do not display '<' associated with variable, for example <A>
+ \let\syntright\relax   % do not display '>' associated with variable, for example <A>
+ %<T> ::= A | T $\rightarrow$ T
+ %<t> ::= x | t t | $\lambda$x.t | case t of a | let d in t | if t then t else t
+ <T> ::= t | T $\rightarrow$ T
+ 
+ <E> ::= e | E E | $\lambda$e.E | case E of $a_1 \ldots a_n$ | let $d_1 \ldots d_n$ in E | if E then E else E
+\end{grammar}
+
+%\subsection{Case}
 % ...
 
-\section{Finalità}
-% ~ scopo del mio lavoro
-% ...
+\subsection{Let-in}
+Il costrutto del let-in è costituito da:
+\begin{itemize}
+ \item Una lista di dichiarazioni che associano, ciascuna, un nome ad un termine;
+ \item Un corpo che è un'espressione che contiene i termini definiti nelle dichiarazioni.
+\end{itemize}
+
+\subsection{Type class}
+Un altro elemento da cui Haskell è costituito è il meccanismo delle type class. Una type class è un costrutto di un sistema di tipi che supporta il polimorfismo parametrico. Esso è ottenuto aggiungendo vincoli alle variabili di tipo. Questi tipicamente coinvolgono una type class e una variabile di tipo e indicano che la variabile può essere istanziata solamente con un tipo che soddisfa le operazioni associate alla type class. Una type class può quindi essere considerata come una sorta di insieme vincolato di tipi.\\
+Paragonando questo sistema con il paradigma di programmazione orientato agli oggetti potremmo dire che, rispettivamente, le type class stanno ai tipi come le classi stanno agli oggetti. Il meccanismo delle type class, infatti, nasce come risposta ad alcuni problemi dovuti all'utilizzo del meccanismo dell'ereditarietà nella programmazione orientata agli oggetti.
 
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
@@ -217,7 +208,7 @@ Per comprendere meglio il concetto presento ora due pezzi di codice, parte del m
 \section{Funzioni ricorsive, match}
 % ...
 
-\section{Type class, instanza, schema}
+\section{Type class, istanza, schema}
 % ...
 
 \section{Let-in}
@@ -237,6 +228,10 @@ CONCLUSIONI}}
 % ...
 
 \section{Riassumendo}
+% ...
+
+\section{Finalità}
+% ~ scopo del mio lavoro
 % ...
 
 \section{La mia esperienza con ELPI}
