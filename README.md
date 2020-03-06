@@ -4,6 +4,8 @@
 
 ### DA FARE:
 
+- Primo punto TESI
+
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
   -->  \_X (discard) or X\_ (fresh variable)
 

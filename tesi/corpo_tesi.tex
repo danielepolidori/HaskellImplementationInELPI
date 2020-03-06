@@ -71,14 +71,18 @@ Il lavoro da me svolto consiste nell'implementazione dell'algoritmo di type infe
 \section{Stato dell'arte}
 
 \subsection{Premesse}
-Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensione degli argomenti successivi.\\
-
+Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensione degli argomenti successivi.
 \begin{description}
- \item[Haskell] Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale. Al suo interno è presente il lambda calcolo e il meccanismo delle type class; è presente inoltre una parte più ampia che corrisponde alle librerie.\\
- \item[Type inference] La type inference è il rilevamento automatico del tipo di dato di un'espressione in un linguaggio di programmazione. La capacità di dedurre i tipi automaticamente semplifica molte attività di programmazione, lasciando il programmatore libero di omettere le annotazioni sui tipi pur consentendo il type check.\\
- \item[ELPI] ELPI è un linguaggio di programmazione logico. Esso è un'estensione con vincoli del linguaggio $\lambda$Prolog, il quale a sua volta è un'estensione di Prolog a una logica di ordine superiore.\\
- \item[Prolog] Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole che sono disgiunzioni di letterali del prim'ordine. L'esecuzione di un programma Prolog è comparabile alla dimostrazione di un teorema mediante la regola di inferenza detta risoluzione (essa permette di passare da un numero finito di proposizioni assunte come premesse a una proposizione che funge da conclusione). I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.\\
- \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.\\
+ \item[Haskell] Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale. Al suo interno è presente il lambda calcolo e il meccanismo delle type class; è presente inoltre una parte più ampia che corrisponde alle librerie.
+ \item[Type inference] La type inference è il rilevamento automatico del tipo di dato di un'espressione in un linguaggio di programmazione. La capacità di dedurre i tipi automaticamente semplifica molte attività di programmazione, lasciando il programmatore libero di omettere le annotazioni sui tipi pur consentendo il type check.
+ \item[ELPI] ELPI è un linguaggio di programmazione logico. Esso è un'estensione con vincoli del linguaggio $\lambda$Prolog, il quale a sua volta è un'estensione di Prolog a una logica di ordine superiore.
+ \item[Prolog] Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole. L'esecuzione di un programma Prolog è comparabile alla dimostrazione di un teorema mediante la regola di inferenza detta risoluzione (essa permette di passare da un numero finito di proposizioni assunte come premesse a una proposizione che funge da conclusione). I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.
+ \item[Clausola] La clausola è una disgiunzione di letterali del prim'ordine. Essa è della forma:
+ \begin{equation}
+  H :- A_1,\ldots,A_n.
+ \end{equation}
+ La semantica è quella di una implicazione rovesciata: $H \leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo $:-$ è omesso, ma non il punto finale. Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
+ \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.
 \end{description}
 
 \subsection{Limiti di $\lambda$Prolog}
@@ -92,44 +96,98 @@ Si è reso dunque necessario l'utilizzo di ELPI, la cui maggiore espressività (
 Entrambi i requisiti sono caratteristiche presenti in ELPI ma non in $\lambda$Prolog. Risulta dunque evidente la necessità di utilizzare ELPI come linguaggio di programmazione per poter raggiungere lo scopo prefissato.
 
 \section{ELPI}
+
 \subsection{Introduzione al linguaggio}
-%ELPI, così come $\lambda$Prolog, è un linguaggio logico di ordine superiore (HOLP language - Higher Order Logic Programming language).
-% ~ La differenza sta nell'aggiunta dei vincoli...
-% ~ cos'è l'ordine superiore...
-% ~ cosa sono i vincoli... o verrà detto nella sottosezione seguente?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ELPI, così come $\lambda$Prolog, è un linguaggio logico di ordine superiore (HOLP language - Higher Order Logic Programming language). La loro differenza consiste nel fatto che ELPI possiede in aggiunta il sistema dei vincoli: infatti esso è un Higher Order constraint Logic Programming language.\\
+Spieghiamo alcuni concetti:
+\begin{description}
+ \item[HOLP] La programmazione di ordine superiore è uno stile di programmazione che usa elementi del linguaggio (ad esempio funzioni, oggetti, \ldots) come valori. Ad esempio le funzioni possono essere passate come argomenti di altre funzioni oppure possono essere il valore di ritorno di altre funzioni. È solitamente istanziato con il modello di computazione del lambda calcolo, il quale utilizza funzioni di ordine superiore.
+ \item[CLP] La programmazione logica con vincoli (Constraint Logic Programming), estensione della programmazione logica, è un paradigma di programmazione dove le relazioni fra variabili possono essere dichiarate in forma di vincoli. Un vincolo è una formula della logica del prim'ordine (solitamente una congiunzione di formule atomiche) che usa solo predicati di significato predefinito.
+\end{description}
 
 \subsection{Sistema di propagazione dei vincoli}
-% ...
+Spieghiamo ora il sistema dei vincoli, nel caso specifico di ELPI.\\
+Generalmente l'approccio con ELPI è il seguente:
+\begin{enumerate}
+ \item Si dichiara il \verb"mode";
+ \item Lo si trasforma in un vincolo;
+ \item Se si ha dei teoremi li si aggiunge, essi sono utili per evitare un accumulo non necessario di vincoli.
+\end{enumerate}
+\begin{description}
+ \item[Primo punto] Si raggiunge definendo il \verb"mode" di un costrutto.\\
+ Struttura:
+ \begin{center}
+ \verb"mode ("\textit{costrutto  serie di}\verb" i  "\textit{serie di}\verb"o)."
+ \end{center}
+ \item[Secondo punto] Si risolve dichiarando che un predicato contenente quel costrutto, il quale presenta in input una variabile non istanziata, può essere soddisfatto aggiungendo un vincolo contentente quel costrutto al cui interno sarà presente la variabile non istanziata; viene inoltre fissata la lista di variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato nel momento in cui le variabili saranno istanziate.\\
+ Struttura:
+ \begin{center}
+ \textit{costrutto}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
+ \verb"!, declare_constraint ("\textit{vincolo}\verb") ["\textit{variabile non istanziata}\verb"]."
+ \end{center}
+ \item[Terzo punto] Il terzo punto si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più \verb"rule", regole di riscrittura dei vincoli. Esse sono della forma:
+ \begin{center}
+  \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."
+ \end{center}
+ Oppure può trovarsi in una delle forme ristrette:
+ \begin{center}
+  \verb"rule \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."\\
+  \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{aggiungo}\verb"."\\
+  \verb"rule \ "\textit{tolgo}\verb" <=> "\textit{aggiungo}\verb"."\\
+ \end{center}\\
+ Struttura:
+ \begin{center}
+  \verb"constraint "\textit{costrutto}\verb" {"\textit{regole}\verb"}"
+ \end{center}
+\end{description}
+
+Il sistema di propagazione dei vincoli consiste nella riscrittura di insiemi di vincoli in altri insiemi di vincoli.
+
+\subsubsection{Esempi}
+Per comprendere meglio il concetto presento ora due pezzi di codice, parte del mio lavoro.\\
+\begin{itemize}
+ \item Implementazione di \verb"of", il costrutto utilizzato per codificare il tipaggio di un termine.
+  \begin{verbatim}
+   type of term -> tipo -> prop.
+   mode (of i o).
+   of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
+  \end{verbatim}
+ \item Implementazione di \verb"eqp_tipo", il costrutto utilizzato per la codifica dell'uguaglianza di due tipi.
+  \begin{verbatim}
+   type eqp_tipo tipo -> tipo -> prop.
+   constraint eqp_tipo {
+    rule \ (eqp_tipo A A) <=> true.
+    rule \ (eqp_tipo A B) <=> false.
+   }
+  \end{verbatim}
+\end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Haskell}
 % ...
