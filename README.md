@@ -2,20 +2,7 @@
 
 
 
-### DA FARE:
-
-- Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
-  -->  \_X (discard) or X\_ (fresh variable)
-
-- I vincoli di OF vanno scritti una volta sola se sono uguali ?
-
-
-
 ### CHIEDERE AL PROF:
-
-- È giusto fare in quel modo la terza passata (generalize_list_let)?
-
-- Errore di associa_tipo con implies nei test
 
 - Avendo aggiunto nel codice test.elpi alcuni casi per generiche variabili in input, quando si fanno delle query il numero di possibili SOLUZIONI esplode
 
@@ -25,8 +12,7 @@
 
 
 
-### TESI:
+### DA FARE:
 
-- Indentare ogni prima riga quando si va a capo
-
-- Spazi aumentati tra le varie parole, è giusto?
+- Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
+  -->  \_X (discard) or X\_ (fresh variable)

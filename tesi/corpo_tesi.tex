@@ -296,7 +296,6 @@ la struttura del costrutto è la seguente
   nome_classe -> tipo -> list declaration -> prop.
  type istanza
   nome_classe -> tipo -> list implementation -> prop.
-
  mode (istanza i i o).
  istanza N (uvar _ as X) L :-
   !, declare_constraint (istanza N X L) [X].
@@ -311,7 +310,7 @@ la struttura del costrutto è la seguente
  instantiate (base T) T.
  instantiate (for_all S) O :- instantiate (S T_) O.
  instantiate (implies (is_instance N T) S) O :-
-  istanza N T _L, instantiate S O.
+  istanza N T _, instantiate S O.
 \end{verbatim}
 
 \paragraph{}
@@ -325,32 +324,34 @@ Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare un'ipotetica type clas
 \end{verbatim}
 
 \paragraph{}
-La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una type class. Tale risultato è ottenuto cercando una type class che contenga al suo interno quella specifica funzione, dopo di che lo schema ad essa associato viene istanziato in un tipo che sarà, per l'appunto, il tipo della funzione all'interno della proposizione. Viene inoltre cercata un'istanza di tale type class o, se non trovata, viene aggiunto un vincolo di tale istanza.\\
-L'implementazione del predicato \verb"is_fun_in_decls" è omessa. Esso, presi in input un nome, uno schema e una lista, controlla che sia presente nella lista di dichiarazioni della type class una funzione con tale nome e schema.
-
-\paragraph{}
-Il predicato \verb"istanza" %...
-
-\paragraph{}
-Il predicato \verb"instantiate" %...
-
-
-
-
-
-
-
-
-
-
-
-
+La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una type class. Tale risultato è ottenuto attraverso la collaborazione di più predicati:
+\begin{enumerate}
+ \item Il predicato \verb"typeclass" cerca nel programma una definizione di type class.
+ \item Il predicato \verb"is_fun_in_decls", presi in input il nome della funzione e la lista delle dichiarazioni di funzione della type class, controlla che sia presente nella lista una funzione con tale nome (i.e. che la type class contenga al suo interno quella specifica funzione) e restituisce lo schema ad essa associato. La sua implementazione è omessa in questa trattazione.
+ \item Il predicato \verb"instantiate" istanzia lo schema ad essa associato in un tipo che sarà, per l'appunto, il tipo della funzione all'interno della proposizione.
+ \item Il predicato \verb"istanza" aggiunge un vincolo di appartenenza di tipo all'istanza della type class.
+\end{enumerate}
 
 \section{Let-in}
 % ...
 
 \subsection{Implementazione}
 % ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
@@ -415,13 +416,15 @@ Il predicato \verb"instantiate" %...
   pi x \ of x TX_ => check_list_case [(F x) | TL] T1 T2.
 \end{verbatim}
 
-\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
 \chapter{Implementazione del costrutto let-in}     % crea l'appendice
 % ...
 
-\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
 %\begin{thebibliography}{90}		% crea l'ambiente bibliografia
