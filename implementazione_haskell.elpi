@@ -275,66 +275,23 @@ type coppia_decl nome_decl -> term -> decl.
 % es:   let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))
 %              cioè   [id = (lam A \ A)] (id 4)
 
-%% IDEA 1	(in output associa_tipo con schema istanziato)
-
 of (let_in L EXPR) T :- associa_list_let L L OUT, (OUT => of EXPR T).
 
-% Prima passata per associare un tipo (come variabile) alla dichiarazione e resituisce in output una lista di and fra queste associazioni
+% Prima passata per associare uno schema (come variabile) alla dichiarazione. Resituisce in output una lista di and fra queste associazioni (con gli schemi istanziati)
 type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
 associa_list_let [] L OUT :- of_list_let L L OUT.		% Caso base
-associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N S_ => associa_list_let TL L OUT.
-%R associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N (base T_) => associa_list_let TL L OUT.
-%R associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N T_ => associa_list_let TL L OUT.
+associa_list_let [coppia_decl N _C | TL] L OUT :- associa_schema N (base T_) => associa_list_let TL L OUT.
 
-% Seconda passata per istanziare il tipo associato alla dichiarazione
-%R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
-%R In output serie di associa_tipo 'base' (con 'and': associa_tipo N1 S1, associa_tipo N2 S2, associa_tipo N3 S3, ...) e poi nella terza passata assumo ('=>') questa serie di and e generalizzo
+% Seconda passata per istanziare il tipo associato alla dichiarazione (uno schema base)
 type of_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
-of_list_let [] L OUT :- generalize_list_let L OUT.	% Caso base
-of_list_let [coppia_decl N C | TL] L OUT :- associa_tipo N (base T), of C T, of_list_let TL L OUT.
-%R of_list_let [coppia_decl N C | TL] L OUT :- associa_tipo N T, of C T, of_list_let TL L OUT.
+of_list_let [] L OUT :- generalize_list_let L OUT.		% Caso base
+of_list_let [coppia_decl N C | TL] L OUT :- associa_schema N (base T), of C T, of_list_let TL L OUT.
 
-% Terza passata per generalizzare il tipo associato alla dichiarazione
+% Terza passata per generalizzare il tipo associato alla dichiarazione (in uno schema completo: for_all (implies (base _)))
 type generalize_list_let list decl -> prop -> prop.
 generalize_list_let [] true.
-generalize_list_let [coppia_decl N C | TL] (associa_tipo N S, OUT) :- associa_tipo N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL OUT.
-
-%% IDEA 2	(in output associa_tipo con tipo base)
-
-of (let_in L EXPR) T :- associa_list_let L L OUT, (OUT => generalize_list_let L (of EXPR T)).
-
-type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
-associa_list_let [] L OUT :- of_list_let L OUT.		% Caso base
-associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N S_ => associa_list_let TL L OUT.
-
-type of_list_let list decl -> prop -> prop.		% Prende in input due volte la stessa lista: una da usare e una da passare oltre
-of_list_let [] true.	% Caso base
-%of_list_let [coppia_decl N C | TL] (associa_tipo N (base T), OUT) :- of C T, of_list_let TL OUT.
-of_list_let [coppia_decl N C | TL] (associa_tipo N (base T), OUT) :- associa_tipo N (base T), of C T, of_list_let TL OUT.
-
-type generalize_list_let list decl -> prop -> prop.
-generalize_list_let [] CMD :- CMD.
-generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, (associa_tipo N S => generalize_list_let TL CMD).
-
-of (decl_let N) T :- associa_tipo N (for_all S), !, instantiate (for_all S) T.
-
-%% IDEA 3	(in output associa_tipo con schema non istanziato)
-
-of (let_in L EXPR) T :- associa_list_let L L OUT, (OUT => generalize_list_let L (of EXPR T)).
-
-type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
-associa_list_let [] L true :- of_list_let L.		% Caso base
-associa_list_let [coppia_decl N _C | TL] L (associa_tipo N S, OUT) :- associa_tipo N S => associa_list_let TL L OUT.
-
-type of_list_let list decl -> prop.		% Prende in input due volte la stessa lista: una da usare e una da passare oltre
-of_list_let [].	% Caso base
-of_list_let [coppia_decl N C | TL] :- associa_tipo N (base T), of C T, of_list_let TL.
-
-type generalize_list_let list decl -> prop -> prop.
-generalize_list_let [] CMD :- CMD.
-generalize_list_let [coppia_decl N C | TL] CMD :- associa_tipo N S, of C T, free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL CMD.
-
-%%
+%generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL OUT.
+generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, print (associa_schema N S), generalize_list_let TL OUT.	% debug
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
@@ -342,18 +299,15 @@ type vars_in_type list term -> list tipo -> prop.
 vars_in_type [] [].		% Caso base
 vars_in_type [H|TL] L :- of H T, free_vars T [] L1, vars_in_type TL L2, union_list_tipo L1 L2 L.
 
-type associa_tipo nome_decl -> schema -> prop.
+type associa_schema nome_decl -> schema -> prop.
 
 type decl_let nome_decl -> term.
-of (decl_let N) T :- associa_tipo N S, instantiate S T.
+of (decl_let N) T :- associa_schema N S, instantiate S T.
 
 % Trova tutte le variabili libere (= non legate da lambda o let-in) presenti nel termine in input
 type free_vars_let term -> list term -> prop.
 %                  corpo let-in -> variabili libere -> _ .
 mode (free_vars_let i o).
-%free_vars_let (lam F) L :- pi x \ free_vars_let x [] => free_vars_let (F x) L.		% 'pi x' restituisce una costante
-%Rfree_vars_let (lam F) L :- pi x \ (free_vars_let x [] :- !) => free_vars_let (F x) L.		% 'pi x' restituisce una costante
-%R free_vars_let x [] :- !.		% ~ Non capisco dove e come dovrei utilizzarla
 free_vars_let (lam F) L :- pi x \ (free_vars_let x [] :- !) => free_vars_let (F x) L.		% 'pi x' restituisce una costante
 free_vars_let (app F T) L :- free_vars_let F L1, free_vars_let T L2, union_list_term_univ L1 L2 L.
 free_vars_let (fun _) [].
@@ -403,8 +357,7 @@ test_eqp_term X X' :- declare_constraint (eqp_term X X') [].
 % es:   test_eqp_term X Y  -->  non vale
 % es:   test_eqp_term X X  -->  vale
 
-% Osservi senza istanziare, dal metalivello.
-% Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
+% Osservi senza istanziare, dal metalivello. Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
 type eqp_term term -> term -> prop.
 constraint eqp_term {
  rule \ (eqp_term A A) <=> true.	% Tolgo quel vincolo e aggiungo 'true' (viene messo al posto del vincolo)
@@ -456,8 +409,7 @@ test_eqp_tipo X X' :- declare_constraint (eqp_tipo X X') [].
 % es:   test_eqp_tipo X Y  -->  non vale
 % es:   test_eqp_tipo X X  -->  vale
 
-% Osservi senza istanziare, dal metalivello.
-% Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
+% Osservi senza istanziare, dal metalivello. Non fa backtracking: se scarta la prima (true) non va alla seconda (false).
 type eqp_tipo tipo -> tipo -> prop.
 constraint eqp_tipo {
  rule \ (eqp_tipo A A) <=> true.	% Tolgo quel vincolo e aggiungo 'true' (viene messo al posto del vincolo)
@@ -467,17 +419,21 @@ constraint eqp_tipo {
 % Mette al posto delle variabili (es: [X,Y,Z]) delle costanti quantificate con un forall
 type generalize_forall list tipo -> list tipo -> tipo -> schema -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
 %                      variabili -> variabili -> tipo -> schema -> _ .
-generalize_forall [] L T S :- generalize_instance [] _ L T S.		% Caso base
+generalize_forall [] L T S :- generalize_instance_aux L T S.		% Caso base
 generalize_forall [X|TL] L T (for_all S) :- pi x \ assoc X x => generalize_forall TL L T (S x).
-%R assoc X'' X, test_eqp_tipo X X.
 
-% Recupera anche l'eventuale vincolo della typeclass, dopodiché trasforma quei vincoli in uno schema tramite "implies"
-type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> prop.
-%                        istanze su tipoX -> tipoX -> variabili -> tipo -> schema -> _ .
-generalize_instance [] _ [] T S :- copy T S.	% Caso base
-generalize_instance [] _ [X|TL] T S :- retrieve_constraints X LI, generalize_instance LI X TL T S.
-generalize_instance [istanza N _ _ | LI] X TL T (implies (is_instance N X') S) :- assoc X X', generalize_instance LI X TL T S.
-%R fare due funzioni diverse 1-2 e 2-3
+% Recupera l'eventuale vincolo di typeclass sulle variabili in input
+type generalize_instance_aux list tipo -> tipo -> schema -> prop.
+%                            variabili -> tipo -> schema -> _ .
+generalize_instance_aux [] T S :- generalize_instance [] [] T S.	% Caso base
+generalize_instance_aux [X|TL] T S :- retrieve_constraints X LI, generalize_instance LI TL T S.
+
+% Trasforma quei vincoli sulle typeclass in uno schema tramite "implies"
+type generalize_instance list prop -> list tipo -> tipo -> schema -> prop. 
+%                        vincoli di istanza -> variabili -> tipo -> schema -> _ .
+generalize_instance [] [] T S :- copy T S.		% Caso base
+generalize_instance [] TL T S :- generalize_instance_aux TL T S.
+generalize_instance [istanza N X _ | LI] TL T (implies (is_instance N Y) S) :- assoc X' Y, test_eqp_tipo X X', generalize_instance LI TL T S.
 
 % L'ipotesi (assoc X x) ricorda che la X deve essere sostituita con la x durante la copy
 type assoc tipo -> tipo -> prop.
@@ -521,7 +477,7 @@ test_type 7 T :-
 type even nome_decl.
 type odd nome_decl.
 
-%-OK (T = bool)
+%-OK (T = bool)  con  associa_schema even (base (arr natural bool)) , associa_schema odd (base (arr natural bool))
 test_type 8 T :-
  of (let_in [coppia_decl even (lam x \ case_of x [branch (constructor zero_ []) (boolean tt), dato n \ branch (constructor succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (constructor zero_ []) (boolean ff), dato n \ branch (constructor succ_ [n]) (app (decl_let even) n)])] (app (decl_let even) (constructor succ_ [constructor succ_ [constructor succ_ [constructor zero_ []]]]))) T.
 
@@ -533,7 +489,7 @@ test_schema 1 S :-
 
 type f nome_decl.
 
-%-OK (T = arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c1 \ base (arr (arr X0 c1) c1))
+%-OK (T = arr X0 (arr (arr X0 X1) X1))  con  associa_schema f (for_all c1 \ base (arr (arr X0 c1) c1))
 test_type 11 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
 
