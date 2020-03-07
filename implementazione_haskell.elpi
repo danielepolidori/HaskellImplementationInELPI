@@ -283,6 +283,8 @@ of (let_in L EXPR) T :- associa_list_let L L OUT, (OUT => of EXPR T).
 type associa_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
 associa_list_let [] L OUT :- of_list_let L L OUT.		% Caso base
 associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N S_ => associa_list_let TL L OUT.
+%R associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N (base T_) => associa_list_let TL L OUT.
+%R associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N T_ => associa_list_let TL L OUT.
 
 % Seconda passata per istanziare il tipo associato alla dichiarazione
 %R Non posso fare tutto insieme. Prima associa_tipo e of (con 'base'), e poi terza passata in cui recuperi dichiarazioni, loro tipo e generalizzi il tipo (con 'for_all+base')
@@ -290,6 +292,7 @@ associa_list_let [coppia_decl N _C | TL] L OUT :- associa_tipo N S_ => associa_l
 type of_list_let list decl -> list decl -> prop -> prop.	% Prende in input due volte la stessa lista: una da usare e una da passare oltre
 of_list_let [] L OUT :- generalize_list_let L OUT.	% Caso base
 of_list_let [coppia_decl N C | TL] L OUT :- associa_tipo N (base T), of C T, of_list_let TL L OUT.
+%R of_list_let [coppia_decl N C | TL] L OUT :- associa_tipo N T, of C T, of_list_let TL L OUT.
 
 % Terza passata per generalizzare il tipo associato alla dichiarazione
 type generalize_list_let list decl -> prop -> prop.
@@ -466,6 +469,7 @@ type generalize_forall list tipo -> list tipo -> tipo -> schema -> prop.	% Prend
 %                      variabili -> variabili -> tipo -> schema -> _ .
 generalize_forall [] L T S :- generalize_instance [] _ L T S.		% Caso base
 generalize_forall [X|TL] L T (for_all S) :- pi x \ assoc X x => generalize_forall TL L T (S x).
+%R assoc X'' X, test_eqp_tipo X X.
 
 % Recupera anche l'eventuale vincolo della typeclass, dopodiché trasforma quei vincoli in uno schema tramite "implies"
 type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> prop.
@@ -473,6 +477,7 @@ type generalize_instance list prop -> tipo -> list tipo -> tipo -> schema -> pro
 generalize_instance [] _ [] T S :- copy T S.	% Caso base
 generalize_instance [] _ [X|TL] T S :- retrieve_constraints X LI, generalize_instance LI X TL T S.
 generalize_instance [istanza N _ _ | LI] X TL T (implies (is_instance N X') S) :- assoc X X', generalize_instance LI X TL T S.
+%R fare due funzioni diverse 1-2 e 2-3
 
 % L'ipotesi (assoc X x) ricorda che la X deve essere sostituita con la x durante la copy
 type assoc tipo -> tipo -> prop.
@@ -644,6 +649,7 @@ test_type 23 T :-
 test_type 24 T :-
  of (let_in [coppia_decl f (lam x \ lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
  %pi x \ of x string => of (let_in [coppia_decl f (lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
+%R manca una istanza di eq_ stringa
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
