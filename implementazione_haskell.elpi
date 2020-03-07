@@ -290,8 +290,8 @@ of_list_let [coppia_decl N C | TL] L OUT :- associa_schema N (base T), of C T, o
 % Terza passata per generalizzare il tipo associato alla dichiarazione (in uno schema completo: for_all (implies (base _)))
 type generalize_list_let list decl -> prop -> prop.
 generalize_list_let [] true.
-%generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL OUT.
-generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, print (associa_schema N S), generalize_list_let TL OUT.	% debug
+generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, generalize_list_let TL OUT.
+%generalize_list_let [coppia_decl N C | TL] (associa_schema N S, OUT) :- associa_schema N (base T), free_vars_let C L, vars_in_type L L', generalize L' T S, print (associa_schema N S), generalize_list_let TL OUT.	% debug
 
 % Restituisce le variabili di tipo contenute nei tipi delle variabili di termini in input
 type vars_in_type list term -> list tipo -> prop.
@@ -448,8 +448,6 @@ copy (arr T1 T2) (base (arr T1' T2')) :-
  copy T2 (base T2').
 copy T (base T).													% Caso base 1: Se trova un tipo istanziato (es: int, bool, ...)
 
-% ~ È giusto che i vincoli 'istanza _ X _' vengano rimossi?
-%R   --> SI
 % Il predicato (retrieve_constraints X L) prende X in input e mette in L la lista di tutti i vincoli su X, rimuovendoli dalla lista dei predicati.
 type retrieve_constraints tipo -> list prop -> prop.
 retrieve_constraints X [Y|L] :-
@@ -470,70 +468,64 @@ type x nome_decl.
 type y nome_decl.
 type z nome_decl.
 
-%-OK (T = int)
+%-OK	(T = int)
 test_type 7 T :-
  of (let_in [coppia_decl x (num 1), coppia_decl y (num 2), coppia_decl z (num 3)] (app (app (fun somma_int) (app (app (fun somma_int) (decl_let x)) (decl_let y))) (decl_let z))) T.
 
 type even nome_decl.
 type odd nome_decl.
 
-%-OK (T = bool)  con  associa_schema even (base (arr natural bool)) , associa_schema odd (base (arr natural bool))
+%-OK	(T = bool)  con  associa_schema even (base (arr natural bool)) , associa_schema odd (base (arr natural bool))
 test_type 8 T :-
  of (let_in [coppia_decl even (lam x \ case_of x [branch (constructor zero_ []) (boolean tt), dato n \ branch (constructor succ_ [n]) (app (decl_let odd) n)]), coppia_decl odd (lam x \ case_of x [branch (constructor zero_ []) (boolean ff), dato n \ branch (constructor succ_ [n]) (app (decl_let even) n)])] (app (decl_let even) (constructor succ_ [constructor succ_ [constructor succ_ [constructor zero_ []]]]))) T.
 
 type test_schema int -> schema -> prop.
 
-%-OK (S = for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2)))
+%-OK	(S = for_all c0 \ for_all c1 \ for_all c2 \ base (arr (arr c1 c0) (arr c1 c2)))
 test_schema 1 S :-
  generalize [] (arr (arr X Y_) (arr X Z_)) S.
 
 type f nome_decl.
 
-%-OK (T = arr X0 (arr (arr X0 X1) X1))  con  associa_schema f (for_all c1 \ base (arr (arr X0 c1) c1))
+%-OK	(T = arr X0 (arr (arr X0 X1) X1))  con  associa_schema f (for_all c1 \ base (arr (arr X0 c1) c1))
 test_type 11 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ app g x)] (decl_let f)) T.
 
 type id nome_decl.
 
-%-OK (T = int)  con  associa_tipo id (for_all c0 \ base (arr c0 c0))
+%-OK	(T = int)  con  associa_schema id (for_all c0 \ base (arr c0 c0))
 test_type 12 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (num 4))) T.
 
-%-OK (T = bool)  con  associa_tipo id (for_all c0 \ base (arr c0 c0))
+%-OK	(T = bool)  con  associa_schema id (for_all c0 \ base (arr c0 c0))
 test_type 13 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (decl_let id) (boolean tt))) T.
 
 % ((id id) 4)		id1:(int->int)->(int->int)		id2:int->int
-%-OK?	(T = int)  con  associa_tipo id (for_all c0 \ base (arr c0 c0))
+%-OK	(T = int)  con  associa_schema id (for_all c0 \ base (arr c0 c0))
 test_type 17 T :-
  of (let_in [coppia_decl id (lam A \ A)] (app (app (decl_let id) (decl_let id)) (num 4))) T.
 
-%-OK 	(T = arr X0 (arr X0 (arr (arr X0 X1) X1))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) c2)))
+%-OK 	(T = arr X0 (arr X0 (arr (arr X0 X1) X1))  con  associa_schema f (for_all c2 \ base (arr (arr X0 c2) c2)))
 test_type 14 T :-
  of (lam x \ lam y \ let_in [coppia_decl f (lam g \ if_then_else (boolean ff) (app g x) (app g y))] (decl_let f)) T.
 
-%-OK 	(T = arr X0 (arr X1 (arr (arr X0 X2) (arr (arr X1 X2) X2)))  con  associa_tipo f (for_all c2 \ base (arr (arr X0 c2) (arr (arr X1 c2) c2))))
+%-OK 	(T = arr X0 (arr X1 (arr (arr X0 X2) (arr (arr X1 X2) X2)))  con  associa_schema f (for_all c2 \ base (arr (arr X0 c2) (arr (arr X1 c2) c2))))
 test_type 15 T :-
  of (lam x \ lam y \ let_in [coppia_decl f (lam g \ lam h \ if_then_else (boolean ff) (app g x) (app h y))] (decl_let f)) T.
 
 % La 'f' deve avere il tipo:  (A -> (B -> C)) -> (B -> C)  con  of x A
-%-OK	(T = arr X0 (arr (arr X0 (arr X1 X2)) (arr X1 X2))  con  associa_tipo f (for_all c1 \ for_all c2 \ base (arr (arr X0 (arr c1 c2)) (arr c1 c2))))
+%-OK	(T = arr X0 (arr (arr X0 (arr X1 X2)) (arr X1 X2))  con  associa_schema f (for_all c1 \ for_all c2 \ base (arr (arr X0 (arr c1 c2)) (arr c1 c2))))
 test_type 16 T :-
  of (lam x \ let_in [coppia_decl f (lam g \ lam y \ app (app g x) y)] (decl_let f)) T.
 
 type g nome_decl.
 
-type int_to_forall nome_fun.
-assume (fun_decl int_to_forall (for_all t \ base (arr int t))).
-
-%R Funzioni mutue:  f chiama g  e  g chiama f
+% Funzioni mutue:  f chiama g  e  g chiama f
 % f chiama g  e  g chiama 2: scopri che la f è monomorfa sugli interi solo dalla g (se guardi soltanto la f pensi che sia polimorfa)
-%-?
+%-OK	(T = arr int X0)  con  associa_schema f (for_all c0 \ base (arr int c0)) , associa_schema g (for_all c0 \ base (arr int c0))
 test_type 18 T :-
  of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (decl_let f) (num 2))] (decl_let f)) T.
-%-OK?	(T = arr int X0)  con  associa_tipo f (for_all c0 \ base (arr int c0)) , associa_tipo g (for_all c0 \ base (arr int c0))
-test_type 25 T :-
- of (let_in [coppia_decl f (lam x \ app (decl_let g) x), coppia_decl g (lam y \ app (fun int_to_forall) y)] (decl_let f)) T.
 
 type test_list_prop int -> list prop -> prop.
 
@@ -542,21 +534,21 @@ type b nome_classe.
 type c nome_classe.
 
 % Il test dichiara tre vincoli istanza, due su X (con a e c) e uno su Y (con b).
-%-OK (L = [istanza c X0 X1, istanza a X0 X2])  con il vincolo  istanza b X3 _
+%-OK	(L = [istanza c X0 X1, istanza a X0 X2])  con il vincolo  istanza b X3 _
 test_list_prop 1 L :-
  declare_constraint (istanza a X _) [X],
  declare_constraint (istanza b Y _) [Y],
  declare_constraint (istanza c X _) [X],
  retrieve_constraints X L.
 
-%-OK (L = [istanza b X0 X1])
+%-OK	(L = [istanza b X0 X1])
 test_list_prop 2 L :-
  declare_constraint (istanza a X _) [X],
  declare_constraint (istanza b Y _) [Y],
  declare_constraint (istanza c X _) [X],
  retrieve_constraints Y L.
  
-%-OK (L = [])
+%-OK	(L = [])
 test_list_prop 3 L :-
  declare_constraint (istanza a X _) [X],
  declare_constraint (istanza b Y _) [Y],
@@ -566,11 +558,11 @@ test_list_prop 3 L :-
 %typeclass printable T [fun_decl print_ (base (arr T string))].		% È commentata perché viene assunta in un altro punto del codice
 
 % Da confrontare con il test 20
-%-OK (T = arr X0 X0)  con  associa_tipo f (for_all c0 \ base (arr c0 c0))
+%-OK	(T = arr X0 X0)  con  associa_schema f (for_all c0 \ base (arr c0 c0))
 test_type 19 T :-
  of (let_in [coppia_decl f (lam x \ x)] (decl_let f)) T.
 
-%-OK (T = arr X0 string)  con  istanza printable X0 X1 , associa_tipo f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string)))
+%-OK	(T = arr X0 string)  con  istanza printable X0 X1 , associa_schema f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string)))
 test_type 20 T :-
  of (let_in [coppia_decl f (lam x \ app (fun print_) x)] (decl_let f)) T.
 
@@ -578,7 +570,7 @@ type comparable nome_classe.
 type eq_ nome_fun.
 typeclass comparable V [fun_decl eq_ (base (arr V (arr V bool)))].
 
-%-OK (...  con  associa_tipo f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string))) , associa_tipo g (for_all c0 \ implies (is_instance comparable c0) (base (arr c0 (arr c0 bool)))))
+%-OK	(...  con  associa_schema f (for_all c0 \ implies (is_instance printable c0) (base (arr c0 string))) , associa_schema g (for_all c0 \ implies (is_instance comparable c0) (base (arr c0 (arr c0 bool)))))
 test_type 21 T :-
  of (let_in [coppia_decl f (lam x \ app (fun print_) x), coppia_decl g (lam y1 \ lam y2 \ app (app (fun eq_) y1) y2)] (decl_let g)) T.
 
@@ -590,22 +582,21 @@ type associa_nome_hash nome_fun.
 assume (fun_decl associa_nome_hash (base (arr string (arr int bool)))).		% es: Li associa e ritorna true se il tutto è andato a buon fine
 
 % La x è sia printable che hashable
-%-OK (...  con  associa_tipo f (for_all c0 \ implies (is_instance hashable c0) (implies (is_instance printable c0) (base (arr c0 bool)))))
+%-OK	(...  con  associa_schema f (for_all c0 \ implies (is_instance hashable c0) (implies (is_instance printable c0) (base (arr c0 bool)))))
 test_type 22 T :-
  of (let_in [coppia_decl f (lam x \ app (app (fun associa_nome_hash) (app (fun print_) x)) (app (fun hash) x))] (decl_let f)) T.
 
-% La x è printable, la y è hashable (la x e la y potrebbero avere lo stesso tipo, il quale sarebbe sia printable che hashable, dal momento che si tratta di tipi generici per entrambe le typeclass)
-%-NO (...  con  associa_tipo f (for_all c0 \ for_all c1 \ implies (is_instance printable c1) (implies (is_instance hashable c1) (base (arr c1 (arr c1 bool)))))
-%          oppure  associa_tipo f (for_all c0 \ for_all c1 \ implies (is_instance printable c1) (implies (is_instance hashable c0) (base (arr c1 (arr c0 bool))))))
+% La x è printable, la y è hashable
+%-OK	(...  con  associa_schema f (for_all c0 \ for_all c1 \ implies (is_instance printable c0) (implies (is_instance hashable c1) (base (arr c0 (arr c1 bool))))))
 test_type 23 T :-
  of (let_in [coppia_decl f (lam x \ lam y \ app (app (fun associa_nome_hash) (app (fun print_) x)) (app (fun hash) y))] (decl_let f)) T.
 
-% ~ È giusto che fallisca?
-%-NO (Failure)
+type eq_str nome_fun.
+istanza comparable string [fun_impl eq_ (fun eq_str)].
+
+%-OK	(T = arr string (arr X0 bool)  con  istanza printable X0 X1 , associa_schema f (for_all c0 \ implies (is_instance printable c0) (base (arr string (arr c0 bool)))))
 test_type 24 T :-
  of (let_in [coppia_decl f (lam x \ lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
- %pi x \ of x string => of (let_in [coppia_decl f (lam y \ app (app (fun eq_) x) (app (fun print_) y))] (decl_let f)) T.
-%R manca una istanza di eq_ stringa
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -689,8 +680,10 @@ istanza printable (list T) [fun_impl print_ (lam l \ app (fun concat) (app (app 
 
 
 %%% Test
+
 %-OK (Z = string)
 test_type 2 Z :- of (app (fun print_) (num 3)) Z.
+
 %-OK (Z = arr X0 string, istanza printable X0 _)
 test_type 3 Z :- of (lam x \ app (fun print_) x) Z.
 
@@ -755,38 +748,16 @@ type implies holds -> schema -> schema.
 % es:   for_all t1 \ for_all t2 \ implies (is_instance printable t1) (implies (is_instance comparable t1) (implies (is_instance sortable t2) (base (arr t1 t2))))
 
 
-instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.	% ~ È sbagliato: deve cercare il vincolo 'istanza', non crearne uno nuovo
-
-% Cerca il vincolo 'istanza', se non lo trova ne crea uno nuovo
-%Rinstantiate (implies (is_instance N _) S) O :- declare_constraint (cerca_istanza N) [], !, instantiate S O.
-%instantiate (implies (is_instance N T) S) O :- istanza N T _, instantiate S O.
-
-/*
-type cerca_istanza nome_classe -> prop.
-constraint cerca_istanza {
- rule (istanza N _ _) \ (cerca_istanza N) <=> true.			% 'istanza N _ _' chiede che sia dichiarata un'istanza della type-class N
- rule \ (cerca_istanza N) <=> false.						% Tolgo quel vincolo e aggiungo 'false' (viene messo al posto del vincolo)
-}
-*/
+instantiate (implies (is_instance N T) S) O :- istanza N T _L, instantiate S O.
 
 
 %% Test
 
-% ~ È giusto che impone un vincolo per una istanza generica piuttosto che notare che una istanza specifica già esiste e che quindi può supporre i vari tipi plausibili dell'istanza?
-%   (es: capisce che deve esistere una generica 'istanza comparable X1 _' ma non riesce a dire che funziona con 'X1 = int')
-%   Non trova l'istanza esistente ma impone un vincolo per una nuova istanza.
-%R   --> È GIUSTO COSÌ
-
-%-OK (T = arr X0 string)  con  istanza printable X0 X1
+%-OK	(T = arr X0 string)  con  istanza printable X0 X1
 test_type 9 T :-
  instantiate (for_all t \ implies (is_instance printable t) (base (arr t string))) T.
 
-type comparable nome_classe.
-type compare nome_fun.
-type compare_int nome_fun.
-istanza comparable int [fun_impl compare (fun compare_int)].
-
-%-OK (T = arr X0 (arr X1 X2))  con  istanza comparable X1 X3 , istanza printable X0 X4
+%-OK	(T = arr X0 (arr X1 X2))  con  istanza comparable X1 X3 , istanza printable X0 X4
 test_type 10 T :-
  instantiate (for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance comparable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))) T.
 
