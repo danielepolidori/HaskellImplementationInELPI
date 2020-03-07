@@ -44,8 +44,7 @@
 
 % imposta l'intestazione di pagina
 \rhead[\fancyplain{}{\bfseries\leftmark}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-INDICE}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries INDICE}}
 
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
@@ -63,10 +62,8 @@ INDICE}}
 \chapter{Introduzione}		% crea l'introduzione
 
 % imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries
-INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-INTRODUZIONE}}
+\rhead[\fancyplain{}{\bfseries INTRODUZIONE}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries INTRODUZIONE}}
 
 Il lavoro da me svolto consiste nell'implementazione dell'algoritmo di type inference di Haskell in ELPI.\\
 
@@ -103,7 +100,7 @@ Entrambi i requisiti sono caratteristiche presenti in ELPI ma non in $\lambda$Pr
 ELPI, così come $\lambda$Prolog, è un linguaggio logico di ordine superiore (HOLP language - Higher Order Logic Programming language). La loro differenza consiste nel fatto che ELPI possiede in aggiunta il sistema dei vincoli: infatti esso è un Higher Order constraint Logic Programming language.\\
 Spieghiamo alcuni concetti:
 \begin{description}
- \item[HOLP] La programmazione di ordine superiore è uno stile di programmazione che usa elementi del linguaggio (ad esempio funzioni, oggetti, \ldots) come valori. Ad esempio le funzioni possono essere passate come argomenti di altre funzioni oppure possono essere il valore di ritorno di altre funzioni. È solitamente istanziato con il modello di computazione del lambda calcolo, il quale utilizza funzioni di ordine superiore.
+ \item[HOLP] La programmazione di ordine superiore è uno stile di programmazione che usa elementi del linguaggio (e.g. funzioni, oggetti, \ldots) come valori. Ad esempio le funzioni possono essere passate come argomenti di altre funzioni oppure possono essere il valore di ritorno di altre funzioni. È solitamente istanziato con il modello di computazione del lambda calcolo, il quale utilizza funzioni di ordine superiore.
  \item[CLP] La programmazione logica con vincoli (Constraint Logic Programming), estensione della programmazione logica, è un paradigma di programmazione dove le relazioni fra variabili possono essere dichiarate in forma di vincoli. Un vincolo è una formula della logica del prim'ordine (solitamente una congiunzione di formule atomiche) che usa solo predicati di significato predefinito.
 \end{description}
 
@@ -124,7 +121,7 @@ Struttura:
 \end{center}
 
 \paragraph{Secondo punto}
-Si risolve dichiarando che un predicato contenente quel costrutto, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contentente quel costrutto al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
+Si risolve dichiarando che un predicato contenente un costrutto, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contenente tale costrutto al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
 Struttura:
 \begin{center}
 \textit{costrutto}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
@@ -156,7 +153,8 @@ Per comprendere meglio il concetto presento ora due frammenti di codice, estrapo
   \begin{verbatim}
    type of term -> tipo -> prop.
    mode (of i o).
-   of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
+   of (uvar _ as X) T :-
+    !, declare_constraint (of X T) [X].
   \end{verbatim}
  \item Implementazione di \verb"eqp_tipo", il costrutto utilizzato per la codifica dell'uguaglianza di due tipi.
   \begin{verbatim}
@@ -184,14 +182,15 @@ Il mio lavoro comprende l'implementazione di una parte di Haskell, non di tutto 
 \end{grammar}
 Indichiamo con T i tipi e con E i termini (o espressioni).
 
-%\subsection{Case}
-% ...
+\subsection{Case}
+Il case è un costrutto che prende in input un termine e restituisce un determintato termine di output in base al genere di termine ricevuto. Esso è costituito da una serie di alternative ($a_1 \ldots a_n$), che sono coppie che associano ad un genere di termini di input un termine di output.\\
+Per capire il genere dell'input viene utilizzata la tecnica del pattern matching sul termine stesso confrontandolo con gli input delle alternative del case.
 
 \subsection{Let-in}
 Il costrutto del let-in è costituito da:
 \begin{itemize}
- \item Una lista di dichiarazioni che associano, ciascuna, un nome ad un termine;
- \item Un corpo che è un'espressione che contiene i termini definiti nelle dichiarazioni.
+ \item Una lista di dichiarazioni ($d_1 \ldots d_n$) che associano, ciascuna, un nome ad un termine;
+ \item Un corpo che è un'espressione all'interno della quale vengono utilizzati i termini definiti nelle dichiarazioni.
 \end{itemize}
 
 \subsection{Type class}
@@ -203,7 +202,9 @@ Paragonando questo sistema con il paradigma di programmazione orientato agli ogg
 
 \chapter{Implementazione}		% crea il capitolo
 
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries\rightmark}}	% imposta l'intestazione di pagina
+% imposta l'intestazione di pagina
+\rhead[\fancyplain{}{\bfseries IMPLEMENTAZIONE}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries IMPLEMENTAZIONE}}
 
 Presento di seguito il mio lavoro, con alcuni estratti del codice. Esso consiste nella codifica della sintassi di Haskell e nella implementazione della type inference con le type class di Haskell.
 
@@ -236,7 +237,7 @@ Indichiamo con T i tipi e con E i termini (o espressioni).
  of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 \end{verbatim}
 Per comprendere l'ultima linea di codice è necessaria una spiegazione aggiuntiva rispetto a quanto detto fino ad ora.\\
-Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è stato necessario l'utilizzo di due costrutti particolari: il \verb"pi" e l'implicazione (\verb"=>").\\
+Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è stato necessario l'utilizzo di due costrutti particolari del linguaggio: il \verb"pi" e l'implicazione (\verb"=>").\\
 \begin{description}
  \item[Quantificazione universale] Il costrutto \verb"pi" corrisponde al quantificatore universale ($\forall$). Esso restituisce una costante, in questo caso la \verb"x", quantificata universalmente da utilizzare all'interno dell'espressione.\\
  Struttura:
@@ -250,13 +251,105 @@ Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è s
  \end{center}
 \end{description}
 
-\section{Funzioni ricorsive, match}
-% ...
+\section{Case e funzioni ricorsive}
 
-\section{Type class, istanza, schema}
-% ...
+\paragraph{}
+Implementare il costrutto case ha richiesto l'introduzione di una codifica per gli algebraic data types, una sorta di tipi composti formati dalla combinazione di altri tipi. Essi infatti permettono di classificare il termine in input ricollegandolo ad una classe di appartenenza (e.g. numeri naturali, liste, alberi, \ldots).\\
+Per la consultazione dell'implementazione del costrutto case si rimanda all'appendice A.
+
+\paragraph{}
+Nell'implementazione del linguaggio sono comprese anche le funzioni ricorsive. Dopo aver dichiarato una funzione, infatti, essa può essere richiamata anche all'interno del corpo della medesima.
+
+\section{Type class e schema}
+Per definire il tipaggio nel meccanismo delle type class è stato inserito all'interno dell'implementazione il concetto di schema. In particolare esso viene utilizzato nelle dichiarazioni di funzione, per definire il tipo della stessa. Lo schema, infatti, è un tipo con, al suo interno, delle variabili quantificate universalmente ($\forall$, in codice \verb"for_all"). Esso è costituito da due parti: la lista delle variabili e il tipo.\\
+Mostriamone la sintassi con un esempio.\\
+Per il tipo
+\begin{equation}
+ \forall x,y : x \rightarrow y \label{eq:fax->y}
+\end{equation}
+la struttura del costrutto è la seguente
+\begin{center}
+ \verb"for_all x \ for_all y \ base (arr x y)"
+\end{center}
+
+\subsection{Implementazione}
+\begin{verbatim}
+ kind schema type.
+ type for_all (tipo -> schema) -> schema.
+ type base tipo -> schema.
+ 
+ kind nome_fun type.
+ kind declaration type.
+ type fun_decl nome_fun -> schema -> declaration.
+ kind implementation type.
+ type fun_impl nome_fun -> term -> implementation.
+ 
+ type fun nome_fun -> term.
+ of (fun N) T :-
+  typeclass N1 T1 L,
+  is_fun_in_decls L N S,
+  instantiate S T,
+  istanza N1 T1 _.
+ 
+ kind nome_classe type.
+ type typeclass
+  nome_classe -> tipo -> list declaration -> prop.
+ type istanza
+  nome_classe -> tipo -> list implementation -> prop.
+
+ mode (istanza i i o).
+ istanza N (uvar _ as X) L :-
+  !, declare_constraint (istanza N X L) [X].
+ 
+ type is_fun_in_decls
+  list declaration -> nome_fun -> schema -> prop.
+ 
+ kind holds type.
+ type is_instance nome_classe -> tipo -> holds.
+ type implies holds -> schema -> schema.
+ type instantiate schema -> tipo -> prop.
+ instantiate (base T) T.
+ instantiate (for_all S) O :- instantiate (S T_) O.
+ instantiate (implies (is_instance N T) S) O :-
+  istanza N T _L, instantiate S O.
+\end{verbatim}
+
+\paragraph{}
+Per comprendere la sintassi di un tipo che deve sottostare ad una type class presentiamo un esempio.\\
+Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare un'ipotetica type class \textit{comparable} e y una type class \textit{printable}, la struttura del costrutto è la seguente:
+\begin{verbatim}
+ for_all x \ for_all y \
+  (implies (is_instance comparable x)
+   (implies (is_instance printable y)
+    (base (arr x y))
+\end{verbatim}
+
+\paragraph{}
+La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una type class. Tale risultato è ottenuto cercando una type class che contenga al suo interno quella specifica funzione, dopo di che lo schema ad essa associato viene istanziato in un tipo che sarà, per l'appunto, il tipo della funzione all'interno della proposizione. Viene inoltre cercata un'istanza di tale type class o, se non trovata, viene aggiunto un vincolo di tale istanza.\\
+L'implementazione del predicato \verb"is_fun_in_decls" è omessa. Esso, presi in input un nome, uno schema e una lista, controlla che sia presente nella lista di dichiarazioni della type class una funzione con tale nome e schema.
+
+\paragraph{}
+Il predicato \verb"istanza" %...
+
+\paragraph{}
+Il predicato \verb"instantiate" %...
+
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Let-in}
+% ...
+
+\subsection{Implementazione}
 % ...
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
@@ -265,10 +358,8 @@ Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è s
 \chapter{Conclusioni}		% per fare le conclusioni
 
 % imposta l'intestazione di pagina
-\rhead[\fancyplain{}{\bfseries
-CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
-\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries
-CONCLUSIONI}}
+\rhead[\fancyplain{}{\bfseries CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries CONCLUSIONI}}
 
 % ...
 
@@ -294,6 +385,44 @@ CONCLUSIONI}}
 \subsection{Estensioni}
 % ...
 
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+
+\appendix   % imposta le appendici
+
+% imposta l'intestazione di pagina
+\rhead[\fancyplain{}{\bfseries APPENDICI}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries APPENDICI}}
+
+
+\chapter{Implementazione del costrutto case}   % crea l'appendice
+\begin{verbatim}
+ kind nome_costruttore_adt type.
+ type constructor nome_costruttore_adt -> list term -> term.
+
+ type case_of term -> list pair -> term.
+ kind pair type.
+ type dato (term -> pair) -> pair.
+ type branch term -> term -> pair.
+
+ of (case_of X L) T1 :- of X T2, check_list_case L T1 T2.
+
+ type check_list_case list pair -> tipo -> tipo -> prop.
+ check_list_case [] _ _.
+ check_list_case [branch A B | TL] T1 T2 :-
+  of A T2, of B T1, check_list_case TL T1 T2.
+ check_list_case [dato F | TL] T1 T2 :-
+  pi x \ of x TX_ => check_list_case [(F x) | TL] T1 T2.
+\end{verbatim}
+
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
+
+\chapter{Implementazione del costrutto let-in}     % crea l'appendice
+% ...
+
+\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+
 
 %\begin{thebibliography}{90}		% crea l'ambiente bibliografia
 
@@ -309,7 +438,7 @@ CONCLUSIONI}}
 
 %\end{thebibliography}
 
-\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+%\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
 
 \chapter*{Ringraziamenti}

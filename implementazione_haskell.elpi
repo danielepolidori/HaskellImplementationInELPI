@@ -743,7 +743,6 @@ type is_instance nome_classe -> tipo -> holds.
 type implies holds -> schema -> schema.
 
 % es:   for_all t \ implies (is_instance printable t) (base (arr t string))
-% es:   for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance printable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))
 % es:   for_all t \ implies (is_instance printable t) (implies (is_instance comparable t) (implies (is_instance sortable t) (base (arr t t))))
 % es:   for_all t1 \ for_all t2 \ implies (is_instance printable t1) (implies (is_instance comparable t1) (implies (is_instance sortable t2) (base (arr t1 t2))))
 
