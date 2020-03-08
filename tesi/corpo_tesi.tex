@@ -84,7 +84,7 @@ Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensi
  \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.
 \end{description}
 
-\subsection{Limiti di $\lambda$Prolog}
+\subsection{Limiti di $\lambda$Prolog}\label{limLamProl}
 Non essendo $\lambda$Prolog un linguaggio di programmazione con vincoli risulta impossibile implementare la type inference mediante esso. I limiti dell'utilizzo di tale linguaggio si riscontrano in particolare nel tentativo di codificare il tipaggio per i costrutti del let-in e della type class.\\
 L'unica strategia percorribile sarebbe quella di codificare interamente il sistema punto per punto. In tal caso però si creerebbe un sistema estremamente rigido, il che rende tale strategia impraticabile. Ad esempio, infatti, si potrebbe codificare tutto nelle stringhe e svolgere ogni operazione attraverso di esse; a quel punto ogni cosa sarebbe implementabile, il sistema in questione sarebbe infatti Turing completo. Il problema però è il fatto che in tal caso si dovrebbero abbandonare tutte le features del linguaggio $\lambda$Prolog; infatti la rigidezza del sistema creato non consentirebbe l'utilizzo delle stesse, poiché si risulterebbe vincolati alla nuova struttura.
 
@@ -279,7 +279,7 @@ la struttura del costrutto è la seguente
  \verb"for_all x \ for_all y \ base (arr x y)"
 \end{center}
 
-\subsection{Implementazione}
+\subsection{Implementazione}\label{implTypCl}
 
 \subsubsection{Codice}
 \begin{verbatim}
@@ -352,7 +352,7 @@ L'implementazione del costrutto del let-in non verrà presentata nella sua inter
 
 \paragraph{}
 Per facilitare la comprensione del codice, e della sua spiegazione, si introduce ora il concetto della generalizzazione.\\
-Esso consiste nel generalizzare un tipo in uno schema, una sorta di operazione inversa a quella del predicato \verb"instantiate" (mostrato nel codice del costrutto case). Ogni variabile non istanziata presente nel tipo soggetto a tale operazione verrà generalizzata, attraverso il predicato \verb"for_all", nel rispettivo schema; lo schema risultante conterrà, quindi, il tipo con le variabili generalizzate.\\
+Esso consiste nel generalizzare un tipo in uno schema, una sorta di operazione inversa a quella del predicato \verb"instantiate" (mostrato nella sezione~\ref{implTypCl}). Ogni variabile non istanziata presente nel tipo soggetto a tale operazione verrà generalizzata, attraverso il predicato \verb"for_all", nel rispettivo schema; lo schema risultante conterrà, quindi, il tipo con le variabili generalizzate.\\
 Ad esempio, il tipo
 \begin{equation}
  x \rightarrow int \label{eq:x->int}
@@ -390,7 +390,9 @@ sarà generalizzato in
  type of_list_let list decl -> list decl -> prop -> prop.
  of_list_let [] L OUT :- generalize_list_let L OUT.
  of_list_let [coppia_decl N C | TL] L OUT :-
-  associa_schema N (base T), of C T, of_list_let TL L OUT.
+  associa_schema N (base T),
+  of C T,
+  of_list_let TL L OUT.
 
  type generalize_list_let list decl -> prop -> prop.
  generalize_list_let [] true.
@@ -404,7 +406,8 @@ sarà generalizzato in
 
  type associa_schema nome_decl -> schema -> prop.
  type decl_let nome_decl -> term.
- of (decl_let N) T :- associa_schema N S, instantiate S T.
+ of (decl_let N) T :-
+  associa_schema N S, instantiate S T.
 
  type generalize list tipo -> tipo -> schema -> prop.
  generalize Lnot T S :-
@@ -413,7 +416,8 @@ sarà generalizzato in
 
  type generalize_forall
   list tipo -> list tipo -> tipo -> schema -> prop.
- generalize_forall [] L T S :- generalize_instance_aux L T S.
+ generalize_forall [] L T S :-
+  generalize_instance_aux L T S.
  generalize_forall [X|TL] L T (for_all S) :-
   pi x \ assoc X x => generalize_forall TL L T (S x).
 
@@ -422,12 +426,14 @@ sarà generalizzato in
  generalize_instance_aux [] T S :-
   generalize_instance [] [] T S.
  generalize_instance_aux [X|TL] T S :-
-  retrieve_constraints X LI, generalize_instance LI TL T S.
+  retrieve_constraints X LI,
+  generalize_instance LI TL T S.
 
  type generalize_instance
   list prop -> list tipo -> tipo -> schema -> prop.
  generalize_instance [] [] T S :- copy T S.
- generalize_instance [] TL T S :- generalize_instance_aux TL T S.
+ generalize_instance [] TL T S :-
+  generalize_instance_aux TL T S.
  generalize_instance
   [istanza N X _ | LI] TL T (implies (is_instance N Y) S) :-
    assoc X' Y, test_eqp_tipo X X',
@@ -451,7 +457,8 @@ Per raggiungere tale scopo essa si avvale del lavoro sinergico tra diversi diver
  \item Il predicato \verb"vars_in_type" restituisce le variabili (di tipo) non istanziate contenute nei tipi delle variabili (di termine) libere del corpo delle dichiarazioni.\\
  L'implementazione di tale predicato è omessa in questa trattazione.
  \item Il predicato \verb"associa_schema" associa il nome di una dichiarazione al rispettivo schema.\\
- Per tipare una dichiarazione del let-in (con la proposizione \verb"of (decl_let N) T") si cerca lo schema associato al nome di quella dichiarazione e viene restituito il tipo risultante dall'istanziazione di tale schema.
+ Per tipare una dichiarazione del let-in (con la proposizione\\
+ \verb"of (decl_let N) T") si cerca lo schema associato al nome di quella dichiarazione e viene restituito il tipo risultante dall'istanziazione di tale schema.
  \item Il predicato \verb"generalize" implementa il meccanismo di generalizzazione dei tipi (escludendo alcune variabili di tipo, prese in input, dalla lista di quelle da generalizzare).
  \item Il predicato \verb"free_vars" colleziona la lista, priva di duplicati, delle variabili nel tipo in input (escludendo quelle presenti nella lista presa in input).\\
  L'implementazione di tale predicato è omessa in questa trattazione.
@@ -478,26 +485,51 @@ Infine, dopo aver assunto la serie di proposizioni contenenti il predicato \verb
 % ...
 
 \section{Riassumendo}
-% ...
+
+\paragraph{}
+Il problema da risolvere era il seguente: implementare in un linguaggio logico con vincoli di ordine superiore la type inference del linguaggio di programmazione Haskell.\\
+Per risolvere tale problema si è utilizzato il linguaggio di programmazione ELPI, senza alcuna modifica aggiuntiva. L'impiego delle caratteristiche peculiari di ELPI è risultato necessario ed ha quindi vincolato all'impossibilità di utilizzare un linguaggio meno espressivo di ELPI (e.g. $\lambda$Prolog).
+
+\paragraph{}
+L'idea che si potesse utilizzare il linguaggio di programmazione ELPI e le sue features per risolvere tale problema annoso è stata suggerita dal dr. Enrico Tassi.
 
 \section{Finalità}
-% ~ scopo del mio lavoro
-% ...
+Lo scopo del mio lavoro di tesi è duplice:
+\begin{itemize}
+ \item Il primo, pienamente raggiunto, è mostrare che le estensioni a $\lambda$Prolog presenti in ELPI permettono di risolvere problemi non risolvibili in $\lambda$Prolog.\\
+ Si è dimostrato quindi che ELPI è più espressivo di $\lambda$Prolog, ma non nel senso della Turing completezza. Infatti, come spiegato nella sezione~\ref{limLamProl}, è possibile ottenere la Turing completezza già con il linguaggio $\lambda$Prolog ma i limiti che necessariamente, per il raggiungimento di tale obiettivo, verrebbero imposti al linguaggio non rende tale strategia percorribile.
+ \item Il secondo, lasciato agli sviluppi futuri, è fare del mio lavoro uno strumento di prova per testare, implementare e studiare nuove estensioni al meccanismo delle type class di Haskell.\\
+ Il problema delle type class infatti è un problema complesso. Aggiungere estensioni alle type class nel codice di Haskell è molto complicato, dal momento che Haskell è un'implementazione complessa ed è implementato in un linguaggio più di basso livello. In ELPI invece dovrebbe risultare molto banale, essendo la mia implementazione più di alto livello e più semplice (grazie alle peculiari features del linguaggio).
+\end{itemize}
 
 \section{La mia esperienza con ELPI}
-% ...
+La mia esperienza con ELPI ha avuto inizio durante lo svolgimento del tirocinio curriculare interno, in preparazione alla tesi, presso l'Alma Mater Studiorum - Università di Bologna ed è proseguita poi nel lavoro di tesi. Ho lavorato sotto la supervisione del professore Claudio Sacerdoti Coen.\\
+Il mio approccio al linguaggio è risultato faticoso essendo scarsa la mia conoscenza personale del paradigma di programmazione logico. Nonostante tale considerazione sono rimasti tuttora vivi in me, come precedentemente a questa esperienza, il desiderio e la curiosità di approfondire e lavorare ulteriormente con tale paradigma di programmazione (assieme a quello funzionale).
 
 \section{Il mio lavoro}
-% ...
+Una stima del monte ore complessivo del mio lavoro di tesi è di circa 180 ore, per un totale di circa 600 linee di codice scritte nel linguaggio ELPI.
 
 \section{Sviluppi futuri}
-% ...
-\subsection{Parser}
-% ...
-\subsection{Testing}
-% ...
-\subsection{Estensioni}
-% ...
+
+\paragraph{}
+Si indicano ora i possibili lavori futuri, come sviluppo del mio lavoro di tesi.
+
+\subparagraph{Parser}
+Un primo lavoro consiste nella realizzazione di un parser che prenda in input veri programmi Haskell (i.e. scritti in sintassi Haskell) e li trasformi nella presentazione ELPI (i.e. programmi Haskell scritti nella sintassi ELPI), così da renderlo comprensibile al mio programma. Infatti, al momento, la mia implementazione riesce ad elaborare programmi Haskell soltanto se scritti nella sintassi ELPI, quindi la presentazione ELPI dei programmi.
+
+\subparagraph{Testing}
+Successivamente sarebbe doveroso effettuare un'operazione di test sul lavoro svolto. In tal modo si potrebbe capire la capacità computazionale effettiva della mia implementazione. Infatti, per mancanza di tempo, il codice è stato testato solamente in ridotti test di esempio e non in frammenti di codice o in librerie ampie.\\
+Tale lavoro è impossibile da svolgere senza aver antecedentemente realizzato il parser di cui sopra. Infatti sarrebbe impossibile eseguire dei test esaustivi senza un valido sistema di input e quindi non si potrebbe conoscere l'efficienza dell'implementazione: non si saprebbe infatti quanto tempo impieghi nell'esecuzione di programmi complessi né si saprebbe la complessità effettiva dell'algoritmo. Senza lo svolgimento di test esaustivi si pone la domanda non tanto sulla correttezza quanto sull'efficienza della mia implementazione.
+
+\subparagraph{Estensioni}
+Infine, come ultimo spunto per uno sviluppo futuro, si potrebbe implementare le estensioni al meccanismo base delle type class in Haskell. Esse sono meccanismi più complicati che, per l'appunto, estendono le funzionalità base delle type class.\\
+
+Quindi, in conclusione, i possibili lavori futuri sono:
+\begin{enumerate}
+ \item realizzare un parser per leggere vero codice Haskell;
+ \item fare test usando quel codice vero e capire la capacità computazionale effettiva della mia implementazione;
+ \item implementare le estensioni al meccanismo delle type class.
+\end{enumerate}
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
@@ -553,9 +585,9 @@ Infine, dopo aver assunto la serie di proposizioni contenenti il predicato \verb
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
 
-\chapter*{Ringraziamenti}
+%\chapter*{Ringraziamenti}
 
-\thispagestyle{empty}
+%\thispagestyle{empty}
 
 % ...
 
