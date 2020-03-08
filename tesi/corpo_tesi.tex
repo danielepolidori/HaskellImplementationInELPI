@@ -190,7 +190,7 @@ Per capire il genere dell'input viene utilizzata la tecnica del pattern matching
 Il costrutto del let-in è costituito da:
 \begin{itemize}
  \item Una lista di dichiarazioni ($d_1 \ldots d_n$) che associano, ciascuna, un nome ad un termine;
- \item Un corpo che è un'espressione all'interno della quale vengono utilizzati i termini definiti nelle dichiarazioni.
+ \item Un corpo che è un'espressione all'interno della quale si utilizzano i termini definiti nelle dichiarazioni.
 \end{itemize}
 
 \subsection{Type class}
@@ -206,7 +206,7 @@ Paragonando questo sistema con il paradigma di programmazione orientato agli ogg
 \rhead[\fancyplain{}{\bfseries IMPLEMENTAZIONE}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries IMPLEMENTAZIONE}}
 
-Presento di seguito il mio lavoro, con alcuni estratti del codice. Esso consiste nella codifica della sintassi di Haskell e nella implementazione della type inference con le type class di Haskell.
+Viene presentato di seguito il mio lavoro, con alcuni estratti del codice. Esso consiste nella codifica della sintassi di Haskell e nella implementazione della type inference con le type class di Haskell.
 
 \section{STLC}
 
@@ -222,6 +222,8 @@ Diamo la sua sintassi mediante la seguente grammatica:
 Indichiamo con T i tipi e con E i termini (o espressioni).
 
 \subsection{Implementazione}
+
+\subsubsection{Codice}
 \begin{verbatim}
  kind tipo type.
  type arr tipo -> tipo -> tipo.
@@ -236,6 +238,8 @@ Indichiamo con T i tipi e con E i termini (o espressioni).
  of (app X Y) B :- of X (arr A B), of Y A.
  of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
 \end{verbatim}
+
+\subsubsection{Spiegazione}
 Per comprendere l'ultima linea di codice è necessaria una spiegazione aggiuntiva rispetto a quanto detto fino ad ora.\\
 Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è stato necessario l'utilizzo di due costrutti particolari del linguaggio: il \verb"pi" e l'implicazione (\verb"=>").\\
 \begin{description}
@@ -273,6 +277,8 @@ la struttura del costrutto è la seguente
 \end{center}
 
 \subsection{Implementazione}
+
+\subsubsection{Codice}
 \begin{verbatim}
  kind schema type.
  type for_all (tipo -> schema) -> schema.
@@ -313,6 +319,8 @@ la struttura del costrutto è la seguente
   istanza N T _, instantiate S O.
 \end{verbatim}
 
+\subsubsection{Spiegazione}
+
 \paragraph{}
 Per comprendere la sintassi di un tipo che deve sottostare ad una type class presentiamo un esempio.\\
 Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare un'ipotetica type class \textit{comparable} e y una type class \textit{printable}, la struttura del costrutto è la seguente:
@@ -333,25 +341,121 @@ La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una 
 \end{enumerate}
 
 \section{Let-in}
-% ...
+
+\paragraph{}
+L'implementazione del costrutto del let-in non verrà presentata nella sua interezza. Sarà mostrata, con le dovute spiegazioni, la parte più ardua alla comprensione e i punti di snodo tra i diversi passaggi dell'implementazione del tipaggio del costrutto.
+% ~ Si rimanda all'appendice B per la consultazione del codice completo.
+
+\paragraph{}
+Per facilitare la comprensione del codice, e della sua spiegazione, si introduce ora il concetto della generalizzazione.\\
+Esso consiste nel generalizzare un tipo in uno schema, una sorta di operazione inversa a quella del predicato \verb"instantiate" (mostrato nel codice del costrutto case). Ogni variabile non istanziata presente nel tipo soggetto a tale operazione verrà generalizzata, attraverso il predicato \verb"for_all", nel rispettivo schema; lo schema risultante conterrà, quindi, il tipo con le variabili generalizzate.\\
+Ad esempio, il tipo
+\begin{equation}
+ x \rightarrow int \label{eq:x->int}
+\end{equation}
+(in codice)
+\begin{center}
+ \verb"arr X int"
+\end{center}
+sarà generalizzato in
+\begin{equation}
+ \forall x : x \rightarrow int \label{eq:fax->int}
+\end{equation}
+(in codice)
+\begin{center}
+ \verb"for_all x \ base (arr x int)"
+\end{center}
 
 \subsection{Implementazione}
-% ...
 
+\subsubsection{Codice}
+\begin{verbatim}
+ kind decl type.
+ kind nome_decl type.
+ type let_in list decl -> term -> term.
+ type coppia_decl nome_decl -> term -> decl.
+ 
+ of (let_in L EXPR) T :-
+  associa_list_let L L OUT, (OUT => of EXPR T).
 
+ type associa_list_let list decl -> list decl -> prop -> prop.
+ associa_list_let [] L OUT :- of_list_let L L OUT.
+ associa_list_let [coppia_decl N _C | TL] L OUT :-
+  associa_schema N (base T_) => associa_list_let TL L OUT.
 
+ type of_list_let list decl -> list decl -> prop -> prop.
+ of_list_let [] L OUT :- generalize_list_let L OUT.
+ of_list_let [coppia_decl N C | TL] L OUT :-
+  associa_schema N (base T), of C T, of_list_let TL L OUT.
 
+ type generalize_list_let list decl -> prop -> prop.
+ generalize_list_let [] true.
+ generalize_list_let
+  [coppia_decl N C | TL] (associa_schema N S, OUT) :-
+   associa_schema N (base T),
+   free_vars_let C L,
+   vars_in_type L L',
+   generalize L' T S,
+   generalize_list_let TL OUT.
 
+ type associa_schema nome_decl -> schema -> prop.
+ type decl_let nome_decl -> term.
+ of (decl_let N) T :- associa_schema N S, instantiate S T.
 
+ type generalize list tipo -> tipo -> schema -> prop.
+ generalize Lnot T S :-
+  free_vars T Lnot L1,
+  generalize_forall L1 L1 T S.
 
+ type generalize_forall
+  list tipo -> list tipo -> tipo -> schema -> prop.
+ generalize_forall [] L T S :- generalize_instance_aux L T S.
+ generalize_forall [X|TL] L T (for_all S) :-
+  pi x \ assoc X x => generalize_forall TL L T (S x).
 
+ type generalize_instance_aux
+  list tipo -> tipo -> schema -> prop.
+ generalize_instance_aux [] T S :-
+  generalize_instance [] [] T S.
+ generalize_instance_aux [X|TL] T S :-
+  retrieve_constraints X LI, generalize_instance LI TL T S.
 
+ type generalize_instance
+  list prop -> list tipo -> tipo -> schema -> prop.
+ generalize_instance [] [] T S :- copy T S.
+ generalize_instance [] TL T S :- generalize_instance_aux TL T S.
+ generalize_instance
+  [istanza N X _ | LI] TL T (implies (is_instance N Y) S) :-
+   assoc X' Y, test_eqp_tipo X X',
+   generalize_instance LI TL T S.
 
+ type assoc tipo -> tipo -> prop.
+ mode (assoc i o).
+\end{verbatim}
 
-
-
-
-
+\subsubsection{Spiegazione}
+La proposizione \verb"of (let_in L EXPR) T" tipa il costrutto del let-in.\\
+Per raggiungere tale scopo essa si avvale del lavoro sinergico tra diversi diversi predicati.
+\begin{itemize}
+ \item Il predicato \verb"associa_list_let" esegue una prima passata delle dichiarazioni del let-in (una lista di proposizioni contenti il predicato \verb"coppia_decl") per associare uno schema (come variabile fresca, i.e. non istanziata) a ciascuna dichiarazione e assume tali associazioni attraverso l'implicazione (\verb"=>").\\
+ Resituisce in output una serie di and ($\wedge$, in codice `\verb","') fra queste associazioni, con gli schemi istanziati correttamente\\
+ (e.g. \verb"associa_schema N1 S1, ..., associa_schema Nn Sn").
+ \item Il predicato \verb"of_list_let" esegue una seconda passata sulle stesse dichiarazioni per istanziare lo schema associato a ciascuna dichiarazione con il tipo del corpo della dichiarazione.
+ \item Il predicato \verb"generalize_list_let" esegue una terza, ed ultima, passata sulle medesime dichiarazioni per generalizzare il tipo associato a ciascuna dichiarazione nel rispettivo schema.
+ \item Il predicato \verb"free_vars_let" trova tutte le variabili libere (i.e. non legate dalla lambda astrazione (\verb"lam") o dal let-in) presenti nel corpo di ciascuna dichiarazione.
+ \item Il predicato \verb"vars_in_type" restituisce le variabili (di tipo) non istanziate contenute nei tipi delle variabili (di termine) libere del corpo delle dichiarazioni.
+ \item Il predicato \verb"associa_schema" associa il nome di una dichiarazione al rispettivo schema.\\
+ Per tipare una dichiarazione del let-in (con la proposizione \verb"of (decl_let N) T") si cerca lo schema associato al nome di quella dichiarazione e viene restituito il tipo risultante dall'istanziazione di tale schema.
+ \item Il predicato \verb"generalize" implementa il meccanismo di generalizzazione dei tipi (escludendo alcune variabili di tipo, prese in input, dalla lista di quelle da generalizzare).
+ \item Il predicato \verb"free_vars" colleziona la lista, priva di duplicati, delle variabili nel tipo in input (escludendo quelle presenti nella lista in input).
+ \item Il predicato \verb"generalize_forall" mette, al posto delle variabili da generalizzare, delle costanti quantificate con un \verb"for_all".
+ \item Il predicato \verb"generalize_instance_aux" recupera l'eventuale vincolo di istanza di type class sulle variabili da generalizzare.
+ \item Il predicato \verb"generalize_instance" trasforma quei vincoli di istanza di type class in uno schema tramite i predicati \verb"implies" e \verb"is_instance".
+ \item Il predicato \verb"copy" fa la copia ricorsiva di un tipo nel rispettivo schema (soltanto la parte del predicato \verb"base") sostituendo le variabili non istanziate con la rispettiva costante associata tramite il predicato \verb"assoc".
+ \item La proposizione \verb"assoc X x" associa la variabile \verb"X" con la costante \verb"x".
+ \item Il predicato \verb"test_eqp_tipo" testa se due metavariabili (di tipo) sono uguali, senza unificarle.
+\end{itemize}
+Infine, dopo aver assunto la serie di \verb"associa_schema" di ritorno del predicato \verb"associa_list_let" attraverso l'implicazione (\verb"=>"), viene tipato il corpo del let-in.
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
@@ -416,15 +520,12 @@ La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una 
   pi x \ of x TX_ => check_list_case [(F x) | TL] T1 T2.
 \end{verbatim}
 
-
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
-\chapter{Implementazione del costrutto let-in}     % crea l'appendice
-% ...
+%\chapter{Implementazione del costrutto let-in}     % crea l'appendice
 
-
-\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
+%\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
 %\begin{thebibliography}{90}		% crea l'ambiente bibliografia

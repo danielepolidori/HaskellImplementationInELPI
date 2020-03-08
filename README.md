@@ -16,3 +16,6 @@
 
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
   -->  \_X (discard) or X\_ (fresh variable)
+
+- Inserire nella tesi il concetto del BANG
+- Spiegare meglio nella tesi il concetto del meccanismo di GENERALIZZAZIONE presente nel let-in
