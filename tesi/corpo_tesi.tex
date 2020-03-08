@@ -80,13 +80,15 @@ Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensi
  \begin{equation}
   H :- A_1,\ldots,A_n.
  \end{equation}
- La semantica è quella di una implicazione rovesciata: $H \Leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo $:-$ è omesso, ma non il punto finale. Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
+ La semantica è quella di una implicazione rovesciata: $H \Leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo `$:-$' è omesso, ma non il punto finale (`$.$'). Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
  \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.
 \end{description}
 
 \subsection{Limiti di $\lambda$Prolog}
 Non essendo $\lambda$Prolog un linguaggio di programmazione con vincoli risulta impossibile implementare la type inference mediante esso. I limiti dell'utilizzo di tale linguaggio si riscontrano in particolare nel tentativo di codificare il tipaggio per i costrutti del let-in e della type class.\\
-L'unica strategia percorribile sarebbe quella di codificare interamente il sistema punto per punto. In tal caso però si creerebbe un sistema estremamente rigido, il che rende tale strategia impraticabile. Ad esempio, infatti, si potrebbe codificare tutto nelle stringhe e svolgere ogni operazione attraverso di esse; a quel punto ogni cosa sarebbe implementabile, il sistema in questione sarebbe infatti Turing completo. Il problema però è il fatto che in tal caso si dovrebbero abbandonare tutte le features del linguaggio $\lambda$Prolog; infatti la rigidezza del sistema creato non consentirebbe l'utilizzo delle stesse, poiché si risulterebbe vincolati alla nuova struttura.\\
+L'unica strategia percorribile sarebbe quella di codificare interamente il sistema punto per punto. In tal caso però si creerebbe un sistema estremamente rigido, il che rende tale strategia impraticabile. Ad esempio, infatti, si potrebbe codificare tutto nelle stringhe e svolgere ogni operazione attraverso di esse; a quel punto ogni cosa sarebbe implementabile, il sistema in questione sarebbe infatti Turing completo. Il problema però è il fatto che in tal caso si dovrebbero abbandonare tutte le features del linguaggio $\lambda$Prolog; infatti la rigidezza del sistema creato non consentirebbe l'utilizzo delle stesse, poiché si risulterebbe vincolati alla nuova struttura.
+
+\paragraph{}
 Si è reso dunque necessario l'utilizzo di ELPI, la cui maggiore espressività (non nel senso della Turing completezza) permette di svolgere operazioni impossibili da codificare in $\lambda$Prolog. Prendiamo come esempio i due casi indicati precedentemente:
 \begin{itemize}
  \item Per codificare il tipaggio del let-in è necessario l'utilizzo del meccanismo mode di ELPI. Infatti esso offre un maggior controllo sugli elementi del codice poiché permette di accorgersi se essi sono delle variabili non istanziate, così da poterle gestire in modo appropriato.
@@ -113,22 +115,22 @@ Generalmente l'approccio con ELPI è il seguente:
  \item Se si ha dei teoremi li si aggiunge, essi sono utili per evitare un accumulo non necessario di vincoli.
 \end{enumerate}
 
-\paragraph{Primo punto}
-Si raggiunge definendo il \verb"mode" di un costrutto. Saranno presenti un numero di \verb"i" e di \verb"o" pari, rispettivamente, alla quantità di elementi in input e in output al costrutto.\\
+\paragraph{Punto 1.}
+Si raggiunge definendo il \verb"mode" di un predicato. Saranno presenti un numero di \verb"i" e di \verb"o" pari, rispettivamente, alla quantità di elementi in input e in output al predicato.\\
 Struttura:
 \begin{center}
-\verb"mode ("\textit{costrutto}\verb" i o)."
+\verb"mode ("\textit{predicato}\verb" i o)."
 \end{center}
 
-\paragraph{Secondo punto}
-Si risolve dichiarando che un predicato contenente un costrutto, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contenente tale costrutto al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (cioè una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
+\paragraph{Punto 2.}
+Si risolve dichiarando che una proposizione contenente un predicato, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contenente tale predicato al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (i.e. una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
 Struttura:
 \begin{center}
-\textit{costrutto}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
+\textit{predicato}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
 \verb"!, declare_constraint ("\textit{vincolo}\verb") ["\textit{variabili non istanziate}\verb"]."
 \end{center}
 
-\paragraph{Terzo punto}
+\paragraph{Punto 3.}
 Si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più \verb"rule", regole di riscrittura dei vincoli. Esse sono della forma:
 \begin{center}
  \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."
@@ -141,7 +143,7 @@ Oppure possono trovarsi in una delle forme ristrette:
 \end{center}
 Struttura:
 \begin{center}
- \verb"constraint "\textit{costrutto}\verb" {"\textit{regole}\verb"}"
+ \verb"constraint "\textit{predicato}\verb" {"\textit{regole}\verb"}"
 \end{center}
 
 Il sistema di propagazione dei vincoli consiste nella riscrittura di insiemi di vincoli in altri insiemi di vincoli.
@@ -149,14 +151,14 @@ Il sistema di propagazione dei vincoli consiste nella riscrittura di insiemi di 
 \subsubsection{Esempi}
 Per comprendere meglio il concetto presento ora due frammenti di codice, estrapolati dal mio lavoro.\\
 \begin{itemize}
- \item Implementazione di \verb"of", il costrutto utilizzato per codificare il tipaggio di un termine.
+ \item Implementazione di \verb"of", il predicato utilizzato per codificare il tipaggio di un termine.
   \begin{verbatim}
    type of term -> tipo -> prop.
    mode (of i o).
    of (uvar _ as X) T :-
     !, declare_constraint (of X T) [X].
   \end{verbatim}
- \item Implementazione di \verb"eqp_tipo", il costrutto utilizzato per la codifica dell'uguaglianza di due tipi.
+ \item Implementazione di \verb"eqp_tipo", il predicato utilizzato per la codifica dell'uguaglianza di due tipi.
   \begin{verbatim}
    type eqp_tipo tipo -> tipo -> prop.
    constraint eqp_tipo {
@@ -190,7 +192,7 @@ Per capire il genere dell'input viene utilizzata la tecnica del pattern matching
 Il costrutto del let-in è costituito da:
 \begin{itemize}
  \item Una lista di dichiarazioni ($d_1 \ldots d_n$) che associano, ciascuna, un nome ad un termine;
- \item Un corpo che è un'espressione all'interno della quale si utilizzano i termini definiti nelle dichiarazioni.
+ \item Un corpo che è un'espressione all'interno della quale si possono utilizzare i termini definiti nelle dichiarazioni.
 \end{itemize}
 
 \subsection{Type class}
@@ -206,7 +208,8 @@ Paragonando questo sistema con il paradigma di programmazione orientato agli ogg
 \rhead[\fancyplain{}{\bfseries IMPLEMENTAZIONE}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries IMPLEMENTAZIONE}}
 
-Viene presentato di seguito il mio lavoro, con alcuni estratti del codice. Esso consiste nella codifica della sintassi di Haskell e nella implementazione della type inference con le type class di Haskell.
+Viene presentato di seguito il mio lavoro, con alcuni estratti del codice. Esso consiste nella codifica della sintassi di Haskell e nella implementazione della type inference con le type class di Haskell, il linguaggio utilizzato è ELPI.\\
+Per la consultazione del codice completo si rimanda al repository di GitHub (vedere il riferimento \cite{K1} della bibliografia).
 
 \section{STLC}
 
@@ -241,7 +244,7 @@ Indichiamo con T i tipi e con E i termini (o espressioni).
 
 \subsubsection{Spiegazione}
 Per comprendere l'ultima linea di codice è necessaria una spiegazione aggiuntiva rispetto a quanto detto fino ad ora.\\
-Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è stato necessario l'utilizzo di due costrutti particolari del linguaggio: il \verb"pi" e l'implicazione (\verb"=>").\\
+Essa permette di tipare la lambda astrazione. Per ottenere questo risultato è stato necessario l'utilizzo di due costrutti particolari di ELPI: il \verb"pi" e l'implicazione (\verb"=>").\\
 \begin{description}
  \item[Quantificazione universale] Il costrutto \verb"pi" corrisponde al quantificatore universale ($\forall$). Esso restituisce una costante, in questo caso la \verb"x", quantificata universalmente da utilizzare all'interno dell'espressione.\\
  Struttura:
@@ -262,10 +265,10 @@ Implementare il costrutto case ha richiesto l'introduzione di una codifica per g
 Per la consultazione dell'implementazione del costrutto case si rimanda all'appendice A.
 
 \paragraph{}
-Nell'implementazione del linguaggio sono comprese anche le funzioni ricorsive. Dopo aver dichiarato una funzione, infatti, essa può essere richiamata anche all'interno del corpo della medesima.
+Nell'implementazione di Haskell sono comprese anche le funzioni ricorsive. Dopo aver dichiarato una funzione, infatti, essa può essere richiamata anche all'interno del corpo della medesima.
 
 \section{Type class e schema}
-Per definire il tipaggio nel meccanismo delle type class è stato inserito all'interno dell'implementazione il concetto di schema. In particolare esso viene utilizzato nelle dichiarazioni di funzione, per definire il tipo della stessa. Lo schema, infatti, è un tipo con, al suo interno, delle variabili quantificate universalmente ($\forall$, in codice \verb"for_all"). Esso è costituito da due parti: la lista delle variabili e il tipo.\\
+Per codificare il tipaggio nel meccanismo delle type class è stato inserito all'interno dell'implementazione il concetto di schema. In particolare esso viene utilizzato nelle dichiarazioni di funzione, per definire il tipo della stessa. Lo schema, infatti, è un tipo con, al suo interno, delle variabili quantificate universalmente ($\forall$, in codice \verb"for_all"). Esso è costituito da due parti: la lista di tali variabili e il tipo.\\
 Mostriamone la sintassi con un esempio.\\
 Per il tipo
 \begin{equation}
@@ -335,7 +338,8 @@ Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare un'ipotetica type clas
 La proposizione \verb"of (fun N) T" tipa una generica funzione contenuta in una type class. Tale risultato è ottenuto attraverso la collaborazione di più predicati:
 \begin{enumerate}
  \item Il predicato \verb"typeclass" cerca nel programma una definizione di type class.
- \item Il predicato \verb"is_fun_in_decls", presi in input il nome della funzione e la lista delle dichiarazioni di funzione della type class, controlla che sia presente nella lista una funzione con tale nome (i.e. che la type class contenga al suo interno quella specifica funzione) e restituisce lo schema ad essa associato. La sua implementazione è omessa in questa trattazione.
+ \item Il predicato \verb"is_fun_in_decls", presi in input il nome della funzione e la lista delle dichiarazioni di funzione della type class, controlla che sia presente nella lista una funzione con tale nome (i.e. che la type class contenga al suo interno quella specifica funzione) e restituisce lo schema ad essa associato.\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
  \item Il predicato \verb"instantiate" istanzia lo schema ad essa associato in un tipo che sarà, per l'appunto, il tipo della funzione all'interno della proposizione.
  \item Il predicato \verb"istanza" aggiunge un vincolo di appartenenza di tipo all'istanza della type class.
 \end{enumerate}
@@ -442,20 +446,25 @@ Per raggiungere tale scopo essa si avvale del lavoro sinergico tra diversi diver
  (e.g. \verb"associa_schema N1 S1, ..., associa_schema Nn Sn").
  \item Il predicato \verb"of_list_let" esegue una seconda passata sulle stesse dichiarazioni per istanziare lo schema associato a ciascuna dichiarazione con il tipo del corpo della dichiarazione.
  \item Il predicato \verb"generalize_list_let" esegue una terza, ed ultima, passata sulle medesime dichiarazioni per generalizzare il tipo associato a ciascuna dichiarazione nel rispettivo schema.
- \item Il predicato \verb"free_vars_let" trova tutte le variabili libere (i.e. non legate dalla lambda astrazione (\verb"lam") o dal let-in) presenti nel corpo di ciascuna dichiarazione.
- \item Il predicato \verb"vars_in_type" restituisce le variabili (di tipo) non istanziate contenute nei tipi delle variabili (di termine) libere del corpo delle dichiarazioni.
+ \item Il predicato \verb"free_vars_let" trova tutte le variabili libere (i.e. non legate dalla lambda astrazione (\verb"lam") o dal let-in) presenti nel corpo di ciascuna dichiarazione.\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
+ \item Il predicato \verb"vars_in_type" restituisce le variabili (di tipo) non istanziate contenute nei tipi delle variabili (di termine) libere del corpo delle dichiarazioni.\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
  \item Il predicato \verb"associa_schema" associa il nome di una dichiarazione al rispettivo schema.\\
  Per tipare una dichiarazione del let-in (con la proposizione \verb"of (decl_let N) T") si cerca lo schema associato al nome di quella dichiarazione e viene restituito il tipo risultante dall'istanziazione di tale schema.
  \item Il predicato \verb"generalize" implementa il meccanismo di generalizzazione dei tipi (escludendo alcune variabili di tipo, prese in input, dalla lista di quelle da generalizzare).
- \item Il predicato \verb"free_vars" colleziona la lista, priva di duplicati, delle variabili nel tipo in input (escludendo quelle presenti nella lista in input).
+ \item Il predicato \verb"free_vars" colleziona la lista, priva di duplicati, delle variabili nel tipo in input (escludendo quelle presenti nella lista presa in input).\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
  \item Il predicato \verb"generalize_forall" mette, al posto delle variabili da generalizzare, delle costanti quantificate con un \verb"for_all".
  \item Il predicato \verb"generalize_instance_aux" recupera l'eventuale vincolo di istanza di type class sulle variabili da generalizzare.
  \item Il predicato \verb"generalize_instance" trasforma quei vincoli di istanza di type class in uno schema tramite i predicati \verb"implies" e \verb"is_instance".
- \item Il predicato \verb"copy" fa la copia ricorsiva di un tipo nel rispettivo schema (soltanto la parte del predicato \verb"base") sostituendo le variabili non istanziate con la rispettiva costante associata tramite il predicato \verb"assoc".
+ \item Il predicato \verb"copy" fa la copia ricorsiva di un tipo nel rispettivo schema (soltanto la parte del predicato \verb"base") sostituendo le variabili non istanziate con la rispettiva costante ad esse associata tramite il predicato \verb"assoc".\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
  \item La proposizione \verb"assoc X x" associa la variabile \verb"X" con la costante \verb"x".
- \item Il predicato \verb"test_eqp_tipo" testa se due metavariabili (di tipo) sono uguali, senza unificarle.
+ \item Il predicato \verb"test_eqp_tipo" testa se due metavariabili (di tipo) sono uguali, senza unificarle.\\
+ L'implementazione di tale predicato è omessa in questa trattazione.
 \end{itemize}
-Infine, dopo aver assunto la serie di \verb"associa_schema" di ritorno del predicato \verb"associa_list_let" attraverso l'implicazione (\verb"=>"), viene tipato il corpo del let-in.
+Infine, dopo aver assunto la serie di proposizioni contenenti il predicato \verb"associa_schema" (di ritorno del predicato \verb"associa_list_let") attraverso l'implicazione (\verb"=>"), viene tipato il corpo del let-in.
 
 \clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
@@ -528,21 +537,20 @@ Infine, dopo aver assunto la serie di \verb"associa_schema" di ritorno del predi
 %\clearpage{\pagestyle{empty}\cleardoublepage}		% non numera l'ultima pagina sinistra
 
 
-%\begin{thebibliography}{90}		% crea l'ambiente bibliografia
+\begin{thebibliography}{90}		% crea l'ambiente bibliografia
+\rhead[\fancyplain{}{\bfseries BIBLIOGRAFIA}]{\fancyplain{}{\bfseries\thepage}}
+\lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries BIBLIOGRAFIA}}
 
-%\rhead[\fancyplain{}{\bfseries \leftmark}]{\fancyplain{}{\bfseries
-%\thepage}}
+\addcontentsline{toc}{chapter}{Bibliografia}	% aggiunge la voce Bibliografia nell'indice
+%\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}	% provare anche questo comando
 
-%\addcontentsline{toc}{chapter}{Bibliografia}	% aggiunge la voce Bibliografia nell'indice
-%%\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}	% provare anche questo comando
+\bibitem{K1} https://github.com/danielepolidori/tesi_git - repository di GitHub contenente il mio lavoro di tesi.
+%\bibitem{K1} https://github.com/danielepolidori/HaskellImplementationInELPI\\
+%- repository di GitHub contenente il mio lavoro di tesi.
 
-%\bibitem{K1} Primo oggetto bibliografia.
-%\bibitem{K2} Secondo oggetto bibliografia.
-% ...
+\end{thebibliography}
 
-%\end{thebibliography}
-
-%\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
+\clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
 
 \chapter*{Ringraziamenti}

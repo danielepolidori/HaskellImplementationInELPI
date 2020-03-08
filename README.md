@@ -18,4 +18,14 @@
   -->  \_X (discard) or X\_ (fresh variable)
 
 - Inserire nella tesi il concetto del BANG
+
 - Spiegare meglio nella tesi il concetto del meccanismo di GENERALIZZAZIONE presente nel let-in
+
+- Inserire il vero collegamento a GitHub
+- Migliorare il riferimento a github con un nota a pié di pagina.
+
+- Migliora grafica del blocco CONSTRAINT
+
+- Migliora grafica della BNF di Haskell
+
+- Codice completo del let-in nell'APPENDICE B
