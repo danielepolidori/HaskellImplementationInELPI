@@ -20,6 +20,13 @@
 
 \usepackage{syntax}
 
+
+\clearpage
+\null
+\thispagestyle{empty}
+\clearpage
+
+
 \oddsidemargin=30pt \evensidemargin=20pt	% impostano i margini
 %\hyphenation{sil-la-ba-zio-ne pa-ren-te-si}	% serve per la sillabazione: tra parentesi vanno inserite come nell'esempio le parole che latex non riesce a tagliare nel modo giusto andando a capo
 
@@ -75,12 +82,12 @@ Iniziamo questa trattazione ponendo alcune basi. Esse faciliteranno la comprensi
  \item[Haskell] Haskell è un linguaggio di programmazione che adotta il paradigma di programmazione funzionale. Al suo interno è presente il lambda calcolo e il meccanismo delle type class; è presente inoltre una parte più ampia che corrisponde alle librerie.
  \item[Type inference] La type inference è il rilevamento automatico del tipo di dato di un'espressione in un linguaggio di programmazione. La capacità di dedurre i tipi automaticamente semplifica molte attività di programmazione, lasciando il programmatore libero di omettere le annotazioni sui tipi pur consentendo il type check.
  \item[ELPI] ELPI è un linguaggio di programmazione logico. Esso è un'estensione con vincoli del linguaggio $\lambda$Prolog, il quale a sua volta è un'estensione di Prolog a una logica di ordine superiore.
- \item[Prolog] Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine); la sintassi è composta da formule dette clausole. L'esecuzione di un programma Prolog è comparabile alla dimostrazione di un teorema mediante la regola di inferenza detta risoluzione (essa permette di passare da un numero finito di proposizioni assunte come premesse a una proposizione che funge da conclusione). I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.
+ \item[Prolog] Prolog è un linguaggio di programmazione che adotta il paradigma di programmazione logica. Si basa sul calcolo dei predicati (logica del prim'ordine). La sintassi è composta da formule dette clausole. L'esecuzione di un programma Prolog è comparabile alla dimostrazione di un teorema mediante la regola di inferenza detta risoluzione (essa permette di passare da un numero finito di proposizioni assunte come premesse a una proposizione che funge da conclusione). I concetti fondamentali di questo linguaggio sono l'unificazione, la ricorsione in coda e il backtracking.
  \item[Clausola] La clausola è una disgiunzione di letterali del prim'ordine. Essa è della forma:
  \begin{equation}
   H :- A_1,\ldots,A_n.
  \end{equation}
- La semantica è quella di una implicazione rovesciata: $H \Leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo `$:-$' è omesso, ma non il punto finale (`$.$'). Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
+ La semantica è quella di un'implicazione rovesciata: $H \Leftarrow A_1 \wedge \ldots \wedge A_n$. Se n = 0 il simbolo `$:-$' è omesso, ma non il punto finale (`$.$'). Un programma logico è un insieme di clausole. Una query è una sequenza di atomi $A_1,\ldots,A_n$.
  \item[$\lambda$Prolog] $\lambda$Prolog è, come già detto, un'estensione di Prolog. Le caratteristiche principali in aggiunta, rispetto a Prolog, sono il polimorfismo, la programmazione di ordine superiore e il lambda calcolo tipato.
 \end{description}
 
@@ -102,7 +109,7 @@ Entrambi i requisiti sono caratteristiche presenti in ELPI ma non in $\lambda$Pr
 ELPI, così come $\lambda$Prolog, è un linguaggio logico di ordine superiore (HOLP language - Higher Order Logic Programming language). La loro differenza consiste nel fatto che ELPI possiede in aggiunta il sistema dei vincoli: infatti esso è un Higher Order constraint Logic Programming language.\\
 Spieghiamo alcuni concetti:
 \begin{description}
- \item[HOLP] La programmazione di ordine superiore è uno stile di programmazione che usa elementi del linguaggio (e.g. funzioni, oggetti, \ldots) come valori. Ad esempio le funzioni possono essere passate come argomenti di altre funzioni oppure possono essere il valore di ritorno di altre funzioni. È solitamente istanziato con il modello di computazione del lambda calcolo, il quale utilizza funzioni di ordine superiore.
+ \item[HOLP] La programmazione di ordine superiore è uno stile di programmazione che usa elementi del linguaggio (e.g. funzioni, oggetti, \ldots) come valori. Ad esempio le funzioni possono essere passate come argomenti di altre funzioni oppure possono essere il loro valore di ritorno. È solitamente istanziato con il modello di computazione del lambda calcolo, il quale utilizza funzioni di ordine superiore.
  \item[CLP] La programmazione logica con vincoli (Constraint Logic Programming), estensione della programmazione logica, è un paradigma di programmazione dove le relazioni fra variabili possono essere dichiarate in forma di vincoli. Un vincolo è una formula della logica del prim'ordine (solitamente una congiunzione di formule atomiche) che usa solo predicati di significato predefinito.
 \end{description}
 
@@ -112,7 +119,7 @@ Generalmente l'approccio con ELPI è il seguente:
 \begin{enumerate}
  \item Si dichiara il \verb"mode";
  \item Lo si trasforma in un vincolo;
- \item Se si ha dei teoremi li si aggiunge, essi sono utili per evitare un accumulo non necessario di vincoli.
+ \item Si aggiungono eventualmente dei teoremi, essi sono utili per evitare un accumulo non necessario di vincoli.
 \end{enumerate}
 
 \paragraph{Punto 1.}
@@ -123,7 +130,7 @@ Struttura:
 \end{center}
 
 \paragraph{Punto 2.}
-Si risolve dichiarando che una proposizione contenente un predicato, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contenente tale predicato al cui interno saranno presenti le variabili non istanziate; viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (i.e. una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato: sarà processato soltanto nel momento in cui le variabili ad esso associate saranno istanziate.\\
+Si risolve dichiarando che una proposizione contenente un predicato, il quale presenta in input una o più variabili non istanziate, può essere soddisfatto aggiungendo al programma un vincolo contenente tale predicato al cui interno saranno presenti le variabili non istanziate. Viene inoltre fissata una lista delle variabili non istanziate la quale, una volta soddisfatta (i.e. una volta istanziate le variabili in essa contenute), dà il via alla processazione del vincolo. Infatti un vincolo viene ricordato senza essere processato. Soltanto nel momento in cui le variabili ad esso associate saranno istanziate tale vincolo verrà processato.\\
 Struttura:
 \begin{center}
 \textit{predicato}\verb" (uvar _ as "\textit{variabile non istanziata}\verb") :-"\\
@@ -131,7 +138,7 @@ Struttura:
 \end{center}
 
 \paragraph{Punto 3.}
-Si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più \verb"rule", regole di riscrittura dei vincoli. Esse sono della forma:
+Si ottiene definendo uno o più blocchi \verb"constraint". Al suo interno saranno presenti una o più regole di riscrittura dei vincoli (\verb"rule"). Esse sono della forma:
 \begin{center}
  \verb"rule "\textit{tengo}\verb" \ "\textit{tolgo}\verb" <=> "\textit{condizione}\verb" | "\textit{aggiungo}\verb"."
 \end{center}
@@ -180,7 +187,7 @@ Il mio lavoro comprende l'implementazione di una parte di Haskell, non di tutto 
  %<t> ::= x | t t | $\lambda$x.t | case t of a | let d in t | if t then t else t
  <T> ::= t | T $\rightarrow$ T
  
- <E> ::= e | E E | $\lambda$e.E | case E of $a_1 \ldots a_n$ | let $d_1 \ldots d_n$ in E | if E then E else E
+ <E> ::= e | E E | $\lambda$e.E | case E of $a_1 \ldots a_n$ | let $d_1 \ldots d_n$ in E |if E then E else E
 \end{grammar}
 Indichiamo con T i tipi e con E i termini (o espressioni).
 
@@ -196,7 +203,7 @@ Il costrutto del let-in è costituito da:
 \end{itemize}
 
 \subsection{Type class}
-Un altro elemento da cui Haskell è costituito è il meccanismo delle type class. Una type class è un costrutto di un sistema di tipi che supporta il polimorfismo parametrico. Esso è ottenuto aggiungendo vincoli alle variabili di tipo. Questi tipicamente coinvolgono una type class e una variabile di tipo e indicano che la variabile può essere istanziata solamente con un tipo che soddisfa le operazioni associate alla type class. Una type class può quindi essere considerata come una sorta di insieme vincolato di tipi.\\
+Un altro elemento da cui Haskell è costituito è il meccanismo delle type class. Una type class è un costrutto di un sistema di tipi che supporta il polimorfismo parametrico. Esso è ottenuto aggiungendo vincoli alle variabili di tipo. Tali vincoli tipicamente coinvolgono una type class e una variabile di tipo e indicano che la variabile può essere istanziata solamente con un tipo che soddisfa le operazioni associate alla type class. Una type class può quindi essere considerata come una sorta di insieme vincolato di tipi.\\
 Paragonando questo sistema con il paradigma di programmazione orientato agli oggetti potremmo dire che, rispettivamente, le type class stanno ai tipi come le classi stanno agli oggetti. Il meccanismo delle type class, infatti, nasce come risposta ad alcuni problemi dovuti all'utilizzo del meccanismo dell'ereditarietà nella programmazione orientata agli oggetti.
 
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
@@ -268,7 +275,7 @@ Per la consultazione dell'implementazione del costrutto case si rimanda all'appe
 Nell'implementazione di Haskell sono comprese anche le funzioni ricorsive. Dopo aver dichiarato una funzione, infatti, essa può essere richiamata anche all'interno del corpo della medesima.
 
 \section{Type class e schema}
-Per codificare il tipaggio nel meccanismo delle type class è stato inserito all'interno dell'implementazione il concetto di schema. In particolare esso viene utilizzato nelle dichiarazioni di funzione, per definire il tipo della stessa. Lo schema, infatti, è un tipo con, al suo interno, delle variabili quantificate universalmente ($\forall$, in codice \verb"for_all"). Esso è costituito da due parti: la lista di tali variabili e il tipo.\\
+Per codificare il tipaggio nel meccanismo delle type class è stato inserito all'interno dell'implementazione il concetto di schema. In particolare esso viene utilizzato nelle dichiarazioni di funzione, per definire il tipo della stessa. Lo schema, infatti, è un tipo con all'interno delle variabili quantificate universalmente ($\forall$, in codice \verb"for_all"). Esso è costituito da due parti: la lista di tali variabili e il tipo.\\
 Mostriamone la sintassi con un esempio.\\
 Per il tipo
 \begin{equation}
@@ -326,7 +333,7 @@ la struttura del costrutto è la seguente
 
 \paragraph{}
 Per comprendere la sintassi di un tipo che deve sottostare ad una type class presentiamo un esempio.\\
-Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare un'ipotetica type class \textit{comparable} e y una type class \textit{printable}, la struttura del costrutto è la seguente:
+Per il tipo \eqref{eq:fax->y}, con x che debba soddisfare l'appartenenza ad un'ipotetica type class \textit{comparable} e y ad una type class \textit{printable}, la struttura del costrutto è la seguente:
 \begin{verbatim}
  for_all x \ for_all y \
   (implies (is_instance comparable x)
@@ -445,10 +452,10 @@ sarà generalizzato in
 
 \subsubsection{Spiegazione}
 La proposizione \verb"of (let_in L EXPR) T" tipa il costrutto del let-in.\\
-Per raggiungere tale scopo essa si avvale del lavoro sinergico tra diversi diversi predicati.
+Per raggiungere tale scopo essa si avvale del lavoro sinergico tra diversi predicati.
 \begin{itemize}
- \item Il predicato \verb"associa_list_let" esegue una prima passata delle dichiarazioni del let-in (una lista di proposizioni contenti il predicato \verb"coppia_decl") per associare uno schema (come variabile fresca, i.e. non istanziata) a ciascuna dichiarazione e assume tali associazioni attraverso l'implicazione (\verb"=>").\\
- Resituisce in output una serie di and ($\wedge$, in codice `\verb","') fra queste associazioni, con gli schemi istanziati correttamente\\
+ \item Il predicato \verb"associa_list_let" esegue una prima passata delle dichiarazioni del let-in (una lista di proposizioni contenenti il predicato \verb"coppia_decl") per associare uno schema (come variabile fresca, i.e. non istanziata) a ciascuna dichiarazione e assume tali associazioni attraverso l'implicazione (\verb"=>").\\
+ Restituisce in output una serie di and ($\wedge$, in codice `\verb","') fra queste associazioni, con gli schemi istanziati correttamente\\
  (e.g. \verb"associa_schema N1 S1, ..., associa_schema Nn Sn").
  \item Il predicato \verb"of_list_let" esegue una seconda passata sulle stesse dichiarazioni per istanziare lo schema associato a ciascuna dichiarazione con il tipo del corpo della dichiarazione.
  \item Il predicato \verb"generalize_list_let" esegue una terza, ed ultima, passata sulle medesime dichiarazioni per generalizzare il tipo associato a ciascuna dichiarazione nel rispettivo schema.
@@ -482,16 +489,14 @@ Infine, dopo aver assunto la serie di proposizioni contenenti il predicato \verb
 \rhead[\fancyplain{}{\bfseries CONCLUSIONI}]{\fancyplain{}{\bfseries\thepage}}
 \lhead[\fancyplain{}{\bfseries\thepage}]{\fancyplain{}{\bfseries CONCLUSIONI}}
 
-% ...
-
 \section{Riassumendo}
 
 \paragraph{}
 Il problema da risolvere era il seguente: implementare in un linguaggio logico con vincoli di ordine superiore la type inference del linguaggio di programmazione Haskell.\\
-Per risolvere tale problema si è utilizzato il linguaggio di programmazione ELPI, senza alcuna modifica aggiuntiva. L'impiego delle caratteristiche peculiari di ELPI è risultato necessario ed ha quindi vincolato all'impossibilità di utilizzare un linguaggio meno espressivo di ELPI (e.g. $\lambda$Prolog).
+Per risolvere tale problema è stato utilizzato il linguaggio di programmazione ELPI, senza alcuna modifica aggiuntiva. L'impiego delle caratteristiche peculiari di ELPI è risultato necessario e ha quindi reso impossibile l'utilizzo di un linguaggio meno espressivo di ELPI (e.g. $\lambda$Prolog).
 
 \paragraph{}
-L'idea che si potesse utilizzare il linguaggio di programmazione ELPI e le sue features per risolvere tale problema annoso è stata suggerita dal dr. Enrico Tassi.
+L'idea che si potesse utilizzare il linguaggio di programmazione ELPI e le sue features per risolvere tale problema annoso è stata suggerita dal Dr. Enrico Tassi.
 
 \section{Finalità}
 Lo scopo del mio lavoro di tesi è duplice:
@@ -503,11 +508,11 @@ Lo scopo del mio lavoro di tesi è duplice:
 \end{itemize}
 
 \section{La mia esperienza con ELPI}
-La mia esperienza con ELPI ha avuto inizio durante lo svolgimento del tirocinio curriculare interno, in preparazione alla tesi, presso l'Alma Mater Studiorum - Università di Bologna ed è proseguita poi nel lavoro di tesi. Ho lavorato sotto la supervisione del professore Claudio Sacerdoti Coen.\\
+La mia esperienza con ELPI ha avuto inizio durante lo svolgimento del tirocinio curriculare interno, in preparazione alla tesi, presso l'Alma Mater Studiorum - Università di Bologna ed è proseguita poi nel lavoro di tesi. Ho lavorato sotto la supervisione del Professore Claudio Sacerdoti Coen.\\
 Il mio approccio al linguaggio è risultato faticoso essendo scarsa la mia conoscenza personale del paradigma di programmazione logico. Nonostante tale considerazione sono rimasti tuttora vivi in me, come precedentemente a questa esperienza, il desiderio e la curiosità di approfondire e lavorare ulteriormente con tale paradigma di programmazione (assieme a quello funzionale).
 
 \section{Il mio lavoro}
-Una stima del monte ore complessivo del mio lavoro di tesi è di circa 180 ore, per un totale di circa 600 linee di codice scritte nel linguaggio ELPI.
+Una stima del tempo complessivo impiegato nel mio lavoro di tesi è di circa 180 ore, per un totale di circa 600 linee di codice scritte nel linguaggio ELPI.
 
 \section{Sviluppi futuri}
 
@@ -515,7 +520,7 @@ Una stima del monte ore complessivo del mio lavoro di tesi è di circa 180 ore, 
 Si indicano ora i possibili lavori futuri, come sviluppo del mio lavoro di tesi.
 
 \subparagraph{Parser}
-Un primo lavoro consiste nella realizzazione di un parser che prenda in input veri programmi Haskell (i.e. scritti in sintassi Haskell) e li trasformi nella presentazione ELPI (i.e. programmi Haskell scritti nella sintassi ELPI), così da renderlo comprensibile al mio programma. Infatti, al momento, la mia implementazione riesce ad elaborare programmi Haskell soltanto se scritti nella sintassi ELPI, quindi la presentazione ELPI dei programmi.
+Un primo lavoro consiste nella realizzazione di un parser che prenda in input veri programmi Haskell (i.e. scritti in sintassi Haskell) e li trasformi nella presentazione ELPI (i.e. programmi Haskell scritti nella sintassi ELPI), così da renderlo comprensibile al mio programma. Infatti, al momento, la mia implementazione è in grado di elaborare programmi Haskell soltanto se scritti nella sintassi ELPI, quindi la presentazione ELPI dei programmi.
 
 \subparagraph{Testing}
 Successivamente sarebbe doveroso effettuare un'operazione di test sul lavoro svolto. In tal modo si potrebbe capire la capacità computazionale effettiva della mia implementazione. Infatti, per mancanza di tempo, il codice è stato testato solamente in ridotti test di esempio e non in frammenti di codice o in librerie ampie.\\
@@ -527,7 +532,7 @@ Infine, come ultimo spunto per uno sviluppo futuro, si potrebbe implementare le 
 Quindi, in conclusione, i possibili lavori futuri sono:
 \begin{enumerate}
  \item realizzare un parser per leggere vero codice Haskell;
- \item fare test usando quel codice vero e capire la capacità computazionale effettiva della mia implementazione;
+ \item fare test usando vero codice Haskell e capire la capacità computazionale effettiva della mia implementazione;
  \item implementare le estensioni al meccanismo delle type class.
 \end{enumerate}
 
@@ -576,20 +581,27 @@ Quindi, in conclusione, i possibili lavori futuri sono:
 \addcontentsline{toc}{chapter}{Bibliografia}	% aggiunge la voce Bibliografia nell'indice
 %\addcontentsline{toc}{chapter}{\numberline{}{Bibliografia}}	% provare anche questo comando
 
-\bibitem{K1} https://github.com/danielepolidori/tesi_git - repository di GitHub contenente il mio lavoro di tesi.
-%\bibitem{K1} https://github.com/danielepolidori/HaskellImplementationInELPI\\
-%- repository di GitHub contenente il mio lavoro di tesi.
+%\bibitem{K1} https://github.com/danielepolidori/tesi_git - repository di GitHub contenente il mio lavoro di tesi.
+\bibitem{K1} https://github.com/danielepolidori/HaskellImplementationInELPI\\
+- repository di GitHub contenente il mio lavoro di tesi.
 
 \end{thebibliography}
 
 \clearpage{\pagestyle{empty}\cleardoublepage}	% non numera l'ultima pagina sinistra
 
 
-%\chapter*{Ringraziamenti}
+\chapter*{Ringraziamenti}
 
-%\thispagestyle{empty}
+\thispagestyle{empty}
 
-% ...
+Un ringraziamento speciale va a tutti coloro che mi hanno accompagnato in questo percorso.\\
+\\
+Al Professor Claudio Sacerdoti Coen, per la sua grande disponibilità.\\
+A Rachele, per essermi stata vicina dall'inizio alla fine.\\
+Alla comunità Haramb\"{e}t, per avermi supportato (e sopportato).\\
+Alla mia famiglia, perché è grazie a loro se oggi sono qui.\\
+\\
+Grazie a tutti voi, dal profondo del cuore!
 
 
 \end{document}
