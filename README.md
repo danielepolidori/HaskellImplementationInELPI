@@ -4,6 +4,8 @@
 
 ### DA FARE:
 
+- Trascrivere il capitolo CONCLUSIONI della tesi nella presentazione
+
 - Inserire il nome del RELATORE nella presentazione
 
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
