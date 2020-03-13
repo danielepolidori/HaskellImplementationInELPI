@@ -4,6 +4,8 @@
 
 ### DA FARE:
 
+- Inserire il nome del RELATORE nella presentazione
+
 - Controllare di aver nominato bene con l'UNDERSCORE le variabili non utilizzate
   -->  \_X (discard) or X\_ (fresh variable)
 

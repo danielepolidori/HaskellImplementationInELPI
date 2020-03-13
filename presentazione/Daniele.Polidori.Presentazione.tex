@@ -1,0 +1,45 @@
+\documentclass{beamer}
+
+\usetheme{Warsaw}
+
+\title{Implementazione in un linguaggio logico con vincoli di ordine superiore della type inference di Haskell}
+\author{Daniele Polidori}
+\institute{Alma Mater Studiorum - Università di Bologna\\Corso di Laurea in Informatica}
+\date{III Sessione\\Anno Accademico 2018/2019}
+
+% Imposta il template del footline (così da farci entrare il titolo intero)
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{\begin{beamercolorbox}[wd=.5\paperwidth,ht=4.5ex,dp=2.125ex,leftskip=.3cm plus1fill,rightskip=.3cm]{author in head/foot}%
+    \usebeamerfont{author in head/foot}
+    \insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.5\paperwidth,ht=4.5ex,dp=2.125ex,leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+    \usebeamerfont{title in head/foot}
+    \parbox{.45\paperwidth}{\inserttitle}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+\setbeamertemplate{navigation symbols}{\tiny\insertframenumber/\inserttotalframenumber}     % Inserisce il numero di pagina al posto dei simboli di navigazione
+\setbeamercolor{navigation symbols}{fg=black}   % Colora di nero i simboli di navigazione
+
+\begin{document}
+
+{
+\setbeamertemplate{footline}{}      % Elimina il footline in questa slide
+\setbeamertemplate{navigation symbols}{}    % Lascia uno spazio vuoto al posto dei simboli di navigazione
+\begin{frame}
+ \titlepage     % Beamer's \maketitle
+\end{frame}
+}
+%\addtocounter{framenumber}{-1}     % Non considera questa slide nel conteggio delle pagine
+
+\begin{frame}
+ \frametitle{Presentations with beamer: Frames}
+ % ...
+\end{frame}
+
+% ...
+
+\end{document}
