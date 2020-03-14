@@ -758,7 +758,7 @@ test_type 9 T :-
 
 %-OK	(T = arr X0 (arr X1 X2))  con  istanza comparable X1 X3 , istanza printable X0 X4
 test_type 10 T :-
- instantiate (for_all t1 \ implies (is_instance printable t1) (for_all t2 \ implies (is_instance comparable t2) (for_all t3 \ (base (arr t1 (arr t2 t3)))))) T.
+ instantiate (for_all t1 \ for_all t2 \ for_all t3 \ implies (is_instance printable t1) (implies (is_instance comparable t2) (base (arr t1 (arr t2 t3))))) T.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

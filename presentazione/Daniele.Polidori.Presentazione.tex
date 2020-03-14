@@ -24,6 +24,11 @@
 \setbeamertemplate{navigation symbols}{\tiny\insertframenumber/\inserttotalframenumber}     % Inserisce il numero di pagina al posto dei simboli di navigazione
 \setbeamercolor{navigation symbols}{fg=black}   % Colora di nero i simboli di navigazione
 
+% Cambia la dimensione del font di 'verbatim'
+\makeatletter
+\def\verbatim{\scriptsize\@verbatim \frenchspacing\@vobeyspaces \@xverbatim}
+\makeatother
+
 
 \begin{document}
 
@@ -59,16 +64,31 @@
 \end{frame}
 
 
-\begin{frame}
+\begin{frame}[fragile=singleslide]      % 'fragile' necessario per usare 'verbatim'
  
  \frametitle{Type class}
- 
- % ...
- 
+
+ \underline{Esempio}:
+ \begin{verbatim}
+1.  typeclass printable T [fun_decl print (base (arr T string))].
+2.  istanza printable int [fun_impl print (fun print_int)].
+
+goal>  pi x \ of x int => of (app (fun print) x) T1.
+%   T1 = string
+
+goal>  pi x \ of x bool => of (app (fun print) x) T2.
+%   Failure
+
+goal>  pi x \ of x T3 => of (app (fun print) x) T4.
+%   T3 = X0
+%   T4 = string
+%   istanza printable X0 [...]
+ \end{verbatim}
+
 \end{frame}
 
 
-\begin{frame}
+\begin{frame}[fragile=singleslide]      % 'fragile' necessario per usare 'verbatim'
 
  \frametitle{ELPI}
 
@@ -77,12 +97,30 @@
   \item Estensione con vincoli del linguaggio $\lambda$Prolog.
  \end{itemize}
 
+ \vfill
+ 
+ \underline{Esempio (STLC)}:
+ \begin{verbatim}
+ 1.  kind tipo type.
+ 2.  type arr tipo -> tipo -> tipo.
+ 3.
+ 4.  kind term type.
+ 5.  type app term -> term -> term.
+ 6.  type lam (term -> term) -> term.
+ 7.
+ 8.  type of term -> tipo -> prop.
+ 9.  mode (of i o).
+10.  of (uvar _ as X) T :- !, declare_constraint (of X T) [X].
+11.  of (app X Y) B :- of X (arr A B), of Y A.
+12.  of (lam F) (arr A B) :- pi x \ of x A => of (F x) B.
+ \end{verbatim}
+
 \end{frame}
 
 
 \begin{frame}
 
- \frametitle{Ricerca di type class}
+ \frametitle{Istanziazione degli schemi}
 
  % ...
 
@@ -102,7 +140,7 @@
 
  \frametitle{Conclusioni e sviluppi futuri}
 
- Stima del lavoro svolto:
+ \textbf{Stima del lavoro svolto}:
  \begin{itemize}
   \item Tempo impiegato: 180 ore.
   \item Linee di codice prodotte: 600, scritte in linguaggio ELPI.
@@ -110,7 +148,7 @@
 
  \vfill
 
- Sviluppi futuri:
+ \textbf{Sviluppi futuri}:
  \begin{enumerate}
   \item Parser
   \item Testing
@@ -125,11 +163,12 @@
  \frametitle{Vi ringrazio per l'attenzione}
 
  Se ci sono domande\ldots
- 
+
  \vfill
+
  \begin{flushright}
-  Presentata da: Daniele Polidori\\
-  Relatore: Professor Claudio Sacerdoti Coen
+  \textbf{Presentata da}: Daniele Polidori\\
+  \textbf{Relatore}: Professor Claudio Sacerdoti Coen
  \end{flushright}
 
 \end{frame}
