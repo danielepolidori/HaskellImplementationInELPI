@@ -68,6 +68,16 @@
  
  \frametitle{Type class}
 
+ \begin{verbatim}
+1.  type typeclass nome_classe -> tipo -> list declaration -> prop.
+2.  type istanza nome_classe -> tipo -> list implementation -> prop.
+3.
+4.  mode (istanza i i o).
+5.  istanza N (uvar _ as X) L :- !, declare_constraint (istanza N X L) [X].
+ \end{verbatim}
+
+ \vfill
+
  \underline{Esempio}:
  \begin{verbatim}
 1.  typeclass printable T [fun_decl print (base (arr T string))].
@@ -118,16 +128,39 @@ goal>  pi x \ of x T3 => of (app (fun print) x) T4.
 \end{frame}
 
 
-\begin{frame}
+\begin{frame}[fragile=singleslide]      % 'fragile' necessario per usare 'verbatim'
 
  \frametitle{Istanziazione degli schemi}
 
- % ...
+ \begin{verbatim}
+ 1.  type for_all (tipo -> schema) -> schema.
+ 2.  type base tipo -> schema.
+ 3.
+ 4.  type is_instance nome_classe -> tipo -> holds.
+ 5.  type implies holds -> schema -> schema.
+ 6.  type instantiate schema -> tipo -> prop.
+ 7.
+ 8.  instantiate (base T) T.
+ 9.  instantiate (for_all S) O :- instantiate (S T_) O.
+10.  instantiate (implies (is_instance N T) S) O :-
+11.   istanza N T _, instantiate S O.
+ \end{verbatim}
+
+ \vfill
+
+ \underline{Esempio}:
+ \begin{verbatim}
+goal>  instantiate (for_all t \ implies (is_instance printable t)
+        (base (arr t int))) T.
+%   T = arr X0 int
+%   istanza printable X0 [...]
+ \end{verbatim}
+
 
 \end{frame}
 
 
-\begin{frame}
+\begin{frame}[fragile=singleslide]      % 'fragile' necessario per usare 'verbatim'
 
  \frametitle{Let-in: Regola di generalizzazione}
 
