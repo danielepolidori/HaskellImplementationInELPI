@@ -48,14 +48,22 @@
  \frametitle{Lavoro svolto}
  
  \textbf{Problema da risolvere}: Implementare in un linguaggio logico con vincoli di ordine superiore la type inference di Haskell.
+
+ \vfill
+
  \begin{itemize}
   \item Codifica della sintassi di Haskell.
   \item Implementazione dell’algoritmo di type inference con le type class di Haskell.
  \end{itemize}
  Linguaggio di programmazione utilizzato: ELPI.
 
- \vfill
- \textbf{Finalità:}
+\end{frame}
+
+
+\begin{frame}
+
+ \frametitle{Finalità}
+
  \begin{enumerate}
   \item Dimostrare che ELPI è più espressivo di $\lambda$Prolog.
   \item Strumento di prova per testare, implementare e studiare nuove estensioni al meccanismo delle type class di Haskell.\\(Sviluppi futuri)
@@ -68,6 +76,7 @@
  
  \frametitle{Type class}
 
+ \underline{Frammento}:
  \begin{verbatim}
 1.  type typeclass nome_classe -> tipo -> list declaration -> prop.
 2.  type istanza nome_classe -> tipo -> list implementation -> prop.
@@ -109,7 +118,7 @@ goal>  pi x \ of x T3 => of (app (fun print) x) T4.
 
  \vfill
  
- \underline{Esempio (STLC)}:
+ \underline{Frammento (STLC)}:
  \begin{verbatim}
  1.  kind tipo type.
  2.  type arr tipo -> tipo -> tipo.
@@ -132,6 +141,7 @@ goal>  pi x \ of x T3 => of (app (fun print) x) T4.
 
  \frametitle{Istanziazione degli schemi}
 
+ \underline{Frammento}:
  \begin{verbatim}
  1.  type for_all (tipo -> schema) -> schema.
  2.  type base tipo -> schema.
@@ -156,7 +166,6 @@ goal>  instantiate (for_all t \ implies (is_instance printable t)
 %   istanza printable X0 [...]
  \end{verbatim}
 
-
 \end{frame}
 
 
@@ -164,7 +173,22 @@ goal>  instantiate (for_all t \ implies (is_instance printable t)
 
  \frametitle{Let-in: Regola di generalizzazione}
 
- % ...
+ \underline{Frammento}:
+ \begin{verbatim}
+ 1.  type retrieve_constraints tipo -> list prop -> prop.
+ 2.
+ 3.  retrieve_constraints X [Y|L] :-
+ 4.   declare_constraint (retrieve X Y) [X], !, retrieve_constraints X L.
+ 5.  retrieve_constraints _ [].
+ 6.
+ 7.
+ 8.  type retrieve tipo -> prop -> prop.
+ 9.
+10.  constraint istanza retrieve {
+11.   rule \ (retrieve X Y) (istanza N X L) <=> (Y = istanza N X L).
+12.   rule \ (retrieve X Y) <=> false.
+13.  }
+ \end{verbatim}
 
 \end{frame}
 
@@ -203,15 +227,6 @@ goal>  instantiate (for_all t \ implies (is_instance printable t)
   \textbf{Presentata da}: Daniele Polidori\\
   \textbf{Relatore}: Professor Claudio Sacerdoti Coen
  \end{flushright}
-
-\end{frame}
-
-
-\begin{frame}
-
- \frametitle{}
-
- % ...
 
 \end{frame}
 
