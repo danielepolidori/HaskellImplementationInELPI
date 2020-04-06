@@ -8,7 +8,7 @@ La prima consiste nel dimostrare che le estensioni a lambda Prolog presenti in E
 La seconda, non ancora implementata ma lasciata agli sviluppi futuri, prevede di fare del mio lavoro uno strumento di prova per testare, implementare e studiare nuove estensioni al meccanismo delle type class di Haskell. Infatti, essendo ELPI un linguaggio di più alto livello e più semplice (grazie alle features del linguaggio) rispetto ad Haskell, aggiungere estensioni al meccanismo base delle type class dovrebbe risultare banale (in confronto alla complessità di eseguire tale operazione in Haskell).
 
 
---
+#--
 Tesi.
 Corso di laurea triennale in informatica.
 Alma Mater Studiorum - Università di Bologna.
