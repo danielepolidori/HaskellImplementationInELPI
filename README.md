@@ -9,10 +9,10 @@ La seconda, non ancora implementata ma lasciata agli sviluppi futuri, prevede di
 
 
 
---
+---
 
-*Tesi.
+*Tesi.*
 
-Corso di laurea triennale in informatica.
+*Corso di laurea triennale in informatica.*
 
-Alma Mater Studiorum - Università di Bologna.*
+*Alma Mater Studiorum - Università di Bologna.*
